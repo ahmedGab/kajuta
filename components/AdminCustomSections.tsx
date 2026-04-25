@@ -46,6 +46,7 @@ export default function AdminCustomSections() {
   const [editingSection, setEditingSection] = useState<CustomSection | null>(null);
   const [notification, setNotification] = useState("");
   const [selectedBlock, setSelectedBlock] = useState<ContentBlock | null>(null);
+  const [editingBlocks, setEditingBlocks] = useState<ContentBlock[]>([]);
 
   const showNotification = (msg: string) => {
     setNotification(msg);
@@ -65,14 +66,26 @@ export default function AdminCustomSections() {
     };
     setSections([...sections, newSection]);
     setEditingSection(newSection);
+    setEditingBlocks([]);
+    setSelectedBlock(null);
   };
 
   const handleSave = () => {
-    const newContent = { ...content, customSections: sections };
+    const updatedSections = sections.map(s => {
+      if (s.id === editingSection?.id) {
+        return {
+          ...editingSection,
+          items: convertBlocksToItems(editingBlocks),
+        };
+      }
+      return s;
+    });
+    const newContent = { ...content, customSections: updatedSections };
     saveSiteContent(newContent);
     showNotification("Sections sauvegardées !");
     setEditingSection(null);
     setSelectedBlock(null);
+    setEditingBlocks([]);
     window.location.reload();
   };
 
@@ -110,17 +123,28 @@ export default function AdminCustomSections() {
   const convertBlocksToItems = (blocks: ContentBlock[]): CustomSectionItem[] => {
     return blocks.map(block => ({
       id: block.id,
-      contentFr: block.contentFr,
-      contentAr: block.contentAr,
+      contentFr: block.titleFr + "\n" + block.contentFr,
+      contentAr: block.titleAr + "\n" + block.contentAr,
       image: block.image,
     }));
   };
 
   const handleEditSection = (section: CustomSection) => {
-    const blocks = convertItemsToBlocks(section.items);
-    setEditingSection({ ...section, items: section.items });
+    const blocks = section.items.map(item => ({
+      id: item.id,
+      type: item.image ? "image" as const : "text" as const,
+      titleFr: item.contentFr.split("\n")[0] || "",
+      titleAr: item.contentAr.split("\n")[0] || "",
+      contentFr: item.contentFr.split("\n").slice(1).join("\n") || "",
+      contentAr: item.contentAr.split("\n").slice(1).join("\n") || "",
+      image: item.image,
+    }));
+    setEditingSection(section);
     setSelectedBlock(null);
+    setEditingBlocks(blocks);
   };
+
+  const [editingBlocks, setEditingBlocks] = useState<ContentBlock[]>([]);
 
   const handleAddBlock = (type: ContentBlock["type"]) => {
     const newBlock: ContentBlock = {
@@ -131,57 +155,39 @@ export default function AdminCustomSections() {
       contentFr: "",
       contentAr: "",
     };
-
-    if (editingSection) {
-      const currentBlocks = editingSection.items.length > 0 
-        ? convertItemsToBlocks(editingSection.items)
-        : [];
-      const newBlocks = [...currentBlocks, newBlock];
-      setEditingSection({
-        ...editingSection,
-        items: convertBlocksToItems(newBlocks),
-      });
-    }
+    const newBlocks = [...editingBlocks, newBlock];
+    setEditingBlocks(newBlocks);
+    setEditingSection(editingSection ? { ...editingSection, items: convertBlocksToItems(newBlocks) } : null);
     setSelectedBlock(newBlock);
   };
 
   const handleUpdateBlock = (blockId: string, updates: Partial<ContentBlock>) => {
-    if (!editingSection) return;
-    const currentBlocks = convertItemsToBlocks(editingSection.items);
-    const newBlocks = currentBlocks.map(b => b.id === blockId ? { ...b, ...updates } : b);
-    setEditingSection({
-      ...editingSection,
-      items: convertBlocksToItems(newBlocks),
-    });
+    const newBlocks = editingBlocks.map(b => b.id === blockId ? { ...b, ...updates } : b);
+    setEditingBlocks(newBlocks);
+    setEditingSection(editingSection ? { ...editingSection, items: convertBlocksToItems(newBlocks) } : null);
     setSelectedBlock(prev => prev ? { ...prev, ...updates } : null);
   };
 
   const handleDeleteBlock = (blockId: string) => {
-    if (!editingSection) return;
-    const currentBlocks = convertItemsToBlocks(editingSection.items).filter(b => b.id !== blockId);
-    setEditingSection({
-      ...editingSection,
-      items: convertBlocksToItems(currentBlocks),
-    });
+    const newBlocks = editingBlocks.filter(b => b.id !== blockId);
+    setEditingBlocks(newBlocks);
+    setEditingSection(editingSection ? { ...editingSection, items: convertBlocksToItems(newBlocks) } : null);
     setSelectedBlock(null);
   };
 
   const handleMoveBlock = (blockId: string, direction: "up" | "down") => {
-    if (!editingSection) return;
-    const currentBlocks = convertItemsToBlocks(editingSection.items);
-    const idx = currentBlocks.findIndex(b => b.id === blockId);
+    const idx = editingBlocks.findIndex(b => b.id === blockId);
+    const newBlocks = [...editingBlocks];
     if (direction === "up" && idx > 0) {
-      [currentBlocks[idx - 1], currentBlocks[idx]] = [currentBlocks[idx], currentBlocks[idx - 1]];
-    } else if (direction === "down" && idx < currentBlocks.length - 1) {
-      [currentBlocks[idx], currentBlocks[idx + 1]] = [currentBlocks[idx + 1], currentBlocks[idx]];
+      [newBlocks[idx - 1], newBlocks[idx]] = [newBlocks[idx], newBlocks[idx - 1]];
+    } else if (direction === "down" && idx < newBlocks.length - 1) {
+      [newBlocks[idx], newBlocks[idx + 1]] = [newBlocks[idx + 1], newBlocks[idx]];
     }
-    setEditingSection({
-      ...editingSection,
-      items: convertBlocksToItems(currentBlocks),
-    });
+    setEditingBlocks(newBlocks);
+    setEditingSection(editingSection ? { ...editingSection, items: convertBlocksToItems(newBlocks) } : null);
   };
 
-  const currentBlocks = editingSection ? convertItemsToBlocks(editingSection.items) : [];
+  const currentBlocks = editingBlocks;
 
   // Edit Section View
   if (editingSection) {
@@ -204,7 +210,7 @@ export default function AdminCustomSections() {
         <div className="bg-white p-6 rounded-xl border border-gray-200">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-bold text-xl">Modifier la Section</h3>
-            <button onClick={() => { setEditingSection(null); setSelectedBlock(null); }} className="text-gray-500 hover:text-black">
+            <button onClick={() => { setEditingSection(null); setSelectedBlock(null); setEditingBlocks([]); }} className="text-gray-500 hover:text-black">
               <X size={24} />
             </button>
           </div>
@@ -275,8 +281,8 @@ export default function AdminCustomSections() {
                 <div key={block.id} className={`relative p-4 rounded-xl border-2 transition-all ${
                   selectedBlock?.id === block.id ? 'border-green bg-green/5' : 'border-gray-200 hover:border-green/50'
                 }`}>
-                  <div className="absolute -top-3 left-3 bg-white px-2 text-xs font-semibold text-gray-400">
-                    #{idx + 1} {block.type}
+                  <div className="absolute -top-3 left-3 bg-white px-2 text-xs font-semibold text-green">
+                    #{idx + 1} {block.type === "card" ? "Carte" : block.type === "image" ? "Image" : block.type === "stat" ? "Stat" : "Texte"}
                   </div>
                   <div className="flex justify-end gap-1 mb-2">
                     <button onClick={() => handleMoveBlock(block.id, "up")} disabled={idx === 0} className="p-1 text-gray-400 hover:text-green disabled:opacity-30">
