@@ -69,7 +69,22 @@ export type Occasion = {
 
 export type SectionKey = "story" | "delivery" | "occasions" | "about" | "packs" | "footer";
 
+export type SectionVisibility = {
+  hero: boolean;
+  trustBar: boolean;
+  products: boolean;
+  whyChooseUs: boolean;
+  story: boolean;
+  occasions: boolean;
+  packs: boolean;
+  testimonials: boolean;
+  delivery: boolean;
+  faq: boolean;
+  cta: boolean;
+};
+
 export type SiteContent = {
+  visibility: SectionVisibility;
   logo?: string;
   hero: {
     title: LocalizedString;

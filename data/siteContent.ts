@@ -1,6 +1,19 @@
 import { SiteContent } from "@/lib/types";
 
 export const defaultSiteContent: SiteContent = {
+  visibility: {
+    hero: true,
+    trustBar: true,
+    products: true,
+    whyChooseUs: true,
+    story: true,
+    occasions: true,
+    packs: true,
+    testimonials: true,
+    delivery: true,
+    faq: true,
+    cta: true,
+  },
   logo: "",
   hero: {
     title: {
