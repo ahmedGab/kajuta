@@ -144,8 +144,6 @@ export default function AdminCustomSections() {
     setEditingBlocks(blocks);
   };
 
-  const [editingBlocks, setEditingBlocks] = useState<ContentBlock[]>([]);
-
   const handleAddBlock = (type: ContentBlock["type"]) => {
     const newBlock: ContentBlock = {
       id: `block-${Date.now()}`,
