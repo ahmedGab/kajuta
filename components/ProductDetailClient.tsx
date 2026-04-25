@@ -4,10 +4,11 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getProducts } from "@/lib/storage";
+import { getProductsSync } from "@/lib/storage";
 import { Product } from "@/lib/types";
 import JsonLd from "@/components/JsonLd";
 import { ChevronRight, ShoppingCart, Check, Info } from "lucide-react";
+import * as db from "@/lib/db";
 
 export default function ProductDetailClient({ initialProduct, slug }: { initialProduct?: Product, slug: string }) {
   const [product, setProduct] = useState<Product | undefined>(initialProduct);
@@ -15,16 +16,39 @@ export default function ProductDetailClient({ initialProduct, slug }: { initialP
 
   useEffect(() => {
     setMounted(true);
-    // On mount, check localStorage to see if there's an updated version or a newly added product
-    const storedProducts = getProducts();
-    const found = storedProducts.find((p) => p.slug === slug);
-    if (found) {
-      setProduct(found);
-    }
+    
+    const loadProduct = async () => {
+      try {
+        const supabaseProducts = await db.getProducts();
+        if (supabaseProducts && supabaseProducts.length > 0) {
+          const found = supabaseProducts.find((p: Product) => p.slug === slug);
+          if (found) {
+            setProduct(found);
+          }
+        } else {
+          // Fallback to localStorage
+          const storedProducts = getProductsSync();
+          const found = storedProducts.find((p) => p.slug === slug);
+          if (found) {
+            setProduct(found);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading product:", error);
+        // Fallback to localStorage
+        const storedProducts = getProductsSync();
+        const found = storedProducts.find((p) => p.slug === slug);
+        if (found) {
+          setProduct(found);
+        }
+      }
+    };
+
+    loadProduct();
   }, [slug]);
 
   if (!mounted) {
-    if (!initialProduct) return null; // Avoid hydration mismatch on newly added products
+    if (!initialProduct) return null;
   } else if (!product) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
@@ -35,7 +59,7 @@ export default function ProductDetailClient({ initialProduct, slug }: { initialP
     );
   }
 
-  const p = product || initialProduct; // fallback during SSR
+  const p = product || initialProduct;
   if (!p) return null;
 
   const waMessage = `Bonjour Cajuta, je veux commander: ${p.name} (${p.weight})`;
@@ -48,95 +72,110 @@ export default function ProductDetailClient({ initialProduct, slug }: { initialP
         <div className="container-custom">
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-sm text-chocolate/60 mb-10">
-            <Link href="/" className="hover:text-caramel">Accueil</Link>
-            <ChevronRight size={14} />
-            <Link href="/produits" className="hover:text-caramel">Produits</Link>
-            <ChevronRight size={14} />
+            <Link href="/" className="hover:text-caramel transition-colors">
+              <ChevronRight size={16} className="rotate-180" />
+            </Link>
+            <Link href="/" className="hover:text-caramel transition-colors">Accueil</Link>
+            <span>/</span>
+            <Link href="/produits" className="hover:text-caramel transition-colors">Produits</Link>
+            <span>/</span>
             <span className="text-chocolate font-medium">{p.name}</span>
           </nav>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
-            {/* Image Gallery */}
-            <div className="relative aspect-square rounded-3xl overflow-hidden bg-mint/20 shadow-soft">
-              <Image
-                src={p.image || "https://images.unsplash.com/photo-1608039783021-6116a558f0dd?w=800&q=80"}
-                alt={p.alt || p.name || "Produit Cajuta"}
-                fill
-                className="object-cover"
-                priority
-              />
-              <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full text-sm font-bold text-chocolate shadow-sm">
-                {p.weight}
-              </div>
+            {/* Product Image */}
+            <div className="relative aspect-square rounded-2xl overflow-hidden bg-white shadow-lg">
+              {p.image ? (
+                <Image
+                  src={p.image}
+                  alt={p.alt || p.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  priority
+                />
+              ) : (
+                <div className="w-full h-full bg-cream flex items-center justify-center">
+                  <span className="text-chocolate/40 text-lg">Pas d'image</span>
+                </div>
+              )}
             </div>
 
             {/* Product Info */}
             <div className="flex flex-col">
-              <h1 className="text-4xl lg:text-5xl font-display font-bold text-chocolate mb-4">
-                {p.name}
-              </h1>
+              <span className="text-sm text-caramel font-medium mb-3 uppercase tracking-wider">{p.weight}</span>
+              <h1 className="text-3xl md:text-4xl font-display font-bold text-chocolate mb-4">{p.name}</h1>
+              <p className="text-lg text-chocolate/70 mb-6">{p.shortDescription}</p>
               
-              <div className="font-display font-bold text-4xl text-caramel mb-8">
-                {p.price} <span className="text-xl text-chocolate/60 font-medium">TND</span>
-              </div>
-              
-              <p className="text-lg text-chocolate/80 leading-relaxed mb-10">
-                {p.description}
-              </p>
-              
-              <div className="space-y-8 mb-10">
-                {/* Ingredients */}
-                {p.ingredients && p.ingredients.length > 0 && (
-                <div>
-                  <h3 className="flex items-center gap-2 font-display font-bold text-lg text-chocolate mb-4">
-                    <Info size={20} className="text-green" />
-                    Ingrédients
+              <div className="text-3xl font-bold text-green mb-8">{p.price} TND</div>
+
+              {/* Benefits */}
+              {p.benefits && p.benefits.length > 0 && (
+                <div className="mb-8">
+                  <h3 className="font-semibold text-chocolate mb-3 flex items-center gap-2">
+                    <Check size={18} className="text-green" />
+                    Ce qui rend ce produit special
                   </h3>
-                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {p.ingredients.map((ing, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-chocolate/70">
-                        <Check size={18} className="text-mint shrink-0 mt-0.5" />
-                        <span>{ing}</span>
+                  <ul className="space-y-2">
+                    {p.benefits.map((benefit, index) => (
+                      <li key={index} className="flex items-center gap-2 text-sm text-chocolate/80">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green"></span>
+                        {benefit}
                       </li>
                     ))}
                   </ul>
                 </div>
-                )}
+              )}
 
-                {/* Benefits */}
-                {(p.benefits.length > 0 || p.occasions.length > 0) && (
-                <div>
-                  <h3 className="flex items-center gap-2 font-display font-bold text-lg text-chocolate mb-4">
-                    <Info size={20} className="text-green" />
-                    Avantages & Occasions
+              {/* Occasions */}
+              {p.occasions && p.occasions.length > 0 && (
+                <div className="mb-8">
+                  <h3 className="font-semibold text-chocolate mb-3 flex items-center gap-2">
+                    <Info size={18} className="text-caramel" />
+                    Parfait pour
                   </h3>
                   <div className="flex flex-wrap gap-2">
-                    {p.benefits.map((benefit, idx) => (
-                      <span key={`ben-${idx}`} className="px-3 py-1.5 bg-white border border-mint rounded-full text-sm text-chocolate/70">
-                        {benefit}
-                      </span>
-                    ))}
-                    {p.occasions.map((occ, idx) => (
-                      <span key={`occ-${idx}`} className="px-3 py-1.5 bg-honey/10 border border-honey/20 rounded-full text-sm text-caramel">
-                        Spécial {occ}
+                    {p.occasions.map((occasion, index) => (
+                      <span key={index} className="px-3 py-1 bg-cream rounded-full text-sm text-chocolate">
+                        {occasion}
                       </span>
                     ))}
                   </div>
                 </div>
-                )}
+              )}
+
+              {/* Ingredients */}
+              {p.ingredients && p.ingredients.length > 0 && (
+                <div className="mb-8">
+                  <h3 className="font-semibold text-chocolate mb-3">Ingredients</h3>
+                  <p className="text-sm text-chocolate/70">{p.ingredients.join(", ")}</p>
+                </div>
+              )}
+
+              {/* CTA Button */}
+              <div className="mt-auto">
+                <a
+                  href={waUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-primary w-full py-4 text-lg flex items-center justify-center gap-3"
+                >
+                  <ShoppingCart size={22} />
+                  Commander sur WhatsApp
+                </a>
               </div>
-              
-              <a
-                href={waUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary py-4 px-8 text-lg w-full flex items-center justify-center shadow-green"
-              >
-                <ShoppingCart className="w-5 h-5 mr-3" />
-                Commander sur WhatsApp
-              </a>
             </div>
           </div>
+
+          {/* Full Description */}
+          {p.description && (
+            <div className="mt-16 pt-16 border-t border-gray-200">
+              <h2 className="text-2xl font-display font-bold text-chocolate mb-6">Description</h2>
+              <div className="prose prose-chocolate max-w-none">
+                <p className="text-chocolate/80 leading-relaxed whitespace-pre-line">{p.description}</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>

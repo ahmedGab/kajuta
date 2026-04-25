@@ -4,13 +4,31 @@ import React, { useEffect, useState } from "react";
 import ProduitsClient from "@/components/ProduitsClient";
 import { defaultProducts } from "@/data/products";
 import { getLanguage } from "@/lib/storage";
-import { Language } from "@/lib/types";
+import { Language, Product } from "@/lib/types";
+import * as db from "@/lib/db";
 
 export default function ProduitsPage() {
   const [language, setLanguage] = useState<Language>("fr");
+  const [products, setProducts] = useState<Product[]>(defaultProducts);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLanguage(getLanguage());
+    
+    const loadProducts = async () => {
+      try {
+        const supabaseProducts = await db.getProducts();
+        if (supabaseProducts && supabaseProducts.length > 0) {
+          setProducts(supabaseProducts);
+        }
+      } catch (error) {
+        console.error("Error loading products:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
   }, []);
 
   const isRTL = language === "ar";
@@ -36,7 +54,13 @@ export default function ProduitsPage() {
           </p>
         </div>
 
-        <ProduitsClient initialProducts={defaultProducts} />
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="w-12 h-12 border-4 border-green border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : (
+          <ProduitsClient initialProducts={products} />
+        )}
       </div>
     </div>
   );

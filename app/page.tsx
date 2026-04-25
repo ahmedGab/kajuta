@@ -14,8 +14,9 @@ import DeliverySection from "@/components/DeliverySection";
 import FAQSection from "@/components/FAQSection";
 import CTASection from "@/components/CTASection";
 import CustomSectionsRenderer from "@/components/CustomSectionsRenderer";
-import { getSiteContent } from "@/lib/storage";
-import { SectionVisibility } from "@/lib/types";
+import { SectionVisibility, SiteContent } from "@/lib/types";
+import { defaultSiteContent } from "@/data/siteContent";
+import * as db from "@/lib/db";
 
 const defaultVisibility: SectionVisibility = {
   hero: true,
@@ -62,21 +63,33 @@ const sectionComponents: Record<string, React.ReactNode> = {
 };
 
 export default function Home() {
+  const [content, setContent] = useState<SiteContent>(defaultSiteContent);
   const [visibility, setVisibility] = useState<SectionVisibility | null>(null);
   const [sectionOrder, setSectionOrder] = useState<SectionOrderItem[]>(defaultOrder);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const content = getSiteContent();
-    setVisibility(content.visibility || defaultVisibility);
     
-    const storedOrder = content.sectionOrder as SectionOrderItem[] | undefined;
-    if (storedOrder && storedOrder.length > 0) {
-      setSectionOrder(storedOrder);
-    } else {
-      setSectionOrder(defaultOrder);
-    }
+    const loadContent = async () => {
+      try {
+        const supabaseContent = await db.getSiteContent();
+        if (supabaseContent) {
+          setContent(supabaseContent);
+          setVisibility(supabaseContent.visibility || defaultVisibility);
+          
+          const storedOrder = supabaseContent.sectionOrder as SectionOrderItem[] | undefined;
+          if (storedOrder && storedOrder.length > 0) {
+            setSectionOrder(storedOrder);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading content:", error);
+        setVisibility(defaultVisibility);
+      }
+    };
+
+    loadContent();
   }, []);
 
   if (!mounted || visibility === null) {
