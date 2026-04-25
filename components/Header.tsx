@@ -47,7 +47,7 @@ export default function Header() {
       <div className="container-custom flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2" dir="ltr">
-          {content.logo ? (
+          {content?.logo ? (
             <img src={content.logo} alt="Cajuta" className="h-10 object-contain" />
           ) : (
             <span className="font-display font-bold text-2xl text-green tracking-tight">
