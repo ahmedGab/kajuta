@@ -1,23 +1,9 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { getSiteContent, saveSiteContent } from "@/lib/storage";
 import { Save } from "lucide-react";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { initializeApp, getApps } from "firebase/app";
-import { getStorage } from "firebase/storage";
-
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyBYfvlrd5kZm9Qjvg-84pjSEFutkZ5BDQI",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "cajuta-web.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "cajuta-web",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "cajuta-web.firebasestorage.app",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "948485082985",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:948485082985:web:f2f7bc02d1f721bdd1b7f8",
-};
-
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const storage = getStorage(app);
+import { supabase } from "@/lib/supabase";
 
 export default function AdminImageEditor() {
   const content = getSiteContent();
@@ -31,52 +17,27 @@ export default function AdminImageEditor() {
   const [isUploadingStory, setIsUploadingStory] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
-  const uploadFileWithProgress = (file: File, key: string): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      console.log("Starting upload with config:", {
-        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+  const uploadFileToSupabase = async (file: File): Promise<string> => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const safeName = file.name ? file.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'uploaded_file';
+    const filename = `${uniqueSuffix}-${safeName}`;
+    
+    const { data, error } = await supabase.storage
+      .from('images')
+      .upload(filename, file, {
+        cacheControl: '3600',
+        upsert: false
       });
-      
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-      const safeName = file.name ? file.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'uploaded_file';
-      const filename = `${uniqueSuffix}-${safeName}`;
-      
-      const storageRef = ref(storage, `uploads/${filename}`);
-      
-      console.log("Storage ref created:", storageRef.fullPath);
-      const uploadTask = uploadBytesResumable(storageRef, file);
 
-      uploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setUploadProgressHelper((prev) => ({ ...prev, [key]: Math.round(progress) }));
-        },
-        (error) => {
-          console.error("Upload error:", error);
-          setUploadProgressHelper((prev) => {
-            const newObj = { ...prev };
-            delete newObj[key];
-            return newObj;
-          });
-          reject(new Error(error.message || "Upload failed"));
-        },
-        async () => {
-          try {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            setUploadProgressHelper((prev) => {
-              const newObj = { ...prev };
-              delete newObj[key];
-              return newObj;
-            });
-            resolve(downloadURL);
-          } catch (error) {
-            reject(new Error("Failed to get download URL"));
-          }
-        }
-      );
-    });
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('images')
+      .getPublicUrl(filename);
+
+    return publicUrl;
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "hero" | "story" | "logo") => {
@@ -87,11 +48,16 @@ export default function AdminImageEditor() {
     if (type === "story") setIsUploadingStory(true);
     if (type === "logo") setIsUploadingLogo(true);
 
+    setUploadProgressHelper(prev => ({ ...prev, [type]: 10 }));
+
     try {
-      const url = await uploadFileWithProgress(file, type);
+      const url = await uploadFileToSupabase(file);
+      
       if (type === "hero") setHeroImage(url);
       if (type === "story") setStoryImage(url);
       if (type === "logo") setLogoImage(url);
+      
+      setUploadProgressHelper(prev => ({ ...prev, [type]: 100 }));
       setNotification(`Image ${type} téléchargée avec succès. N'oubliez pas de sauvegarder !`);
     } catch(err: any) {
       console.error("Upload error:", err);
@@ -125,7 +91,7 @@ export default function AdminImageEditor() {
         <div className={`px-4 py-3 rounded-lg border ${
           notification.includes("succès") 
             ? "bg-green/10 text-green border-green/20" 
-            : "bg-red-10 text-red border-red/20"
+            : "bg-red-10 text-red border-red-20"
         }`}>
           {notification}
         </div>

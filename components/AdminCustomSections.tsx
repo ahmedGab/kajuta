@@ -1,24 +1,10 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { getSiteContent, saveSiteContent } from "@/lib/storage";
 import { CustomSection, CustomSectionItem, ContentBlockType } from "@/lib/types";
 import { Plus, Trash2, Save, X, Edit2, Image as ImageIcon, Type, AlignLeft, ChevronUp, ChevronDown, Upload } from "lucide-react";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { initializeApp, getApps } from "firebase/app";
-import { getStorage } from "firebase/storage";
-
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyBYfvlrd5kZm9Qjvg-84pjSEFutkZ5BDQI",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "cajuta-web.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "cajuta-web",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "cajuta-web.firebasestorage.app",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "948485082985",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:948485082985:web:f2f7bc02d1f721bdd1b7f8",
-};
-
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const storage = getStorage(app);
+import { supabase } from "@/lib/supabase";
 
 const contentTypes: { type: ContentBlockType; label: string; icon: typeof Type; description: string }[] = [
   { type: "text", label: "Texte", icon: Type, description: "Titre + paragraphe" },
@@ -55,34 +41,32 @@ type ContentBlock = {
   number?: string;
 };
 
-const uploadFileWithProgress = (file: File, onProgress: (percent: number) => void): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const safeName = file.name ? file.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'uploaded_file';
-    const filename = `${uniqueSuffix}-${safeName}`;
-    
-    const storageRef = ref(storage, `uploads/${filename}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
+const uploadFileWithProgress = async (file: File, onProgress: (percent: number) => void): Promise<string> => {
+  const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+  const safeName = file.name ? file.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'uploaded_file';
+  const filename = `${uniqueSuffix}-${safeName}`;
+  
+  onProgress(30);
+  
+  const { data, error } = await supabase.storage
+    .from('images')
+    .upload(filename, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
 
-    uploadTask.on(
-      "state_changed",
-      (snapshot) => {
-        const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-        onProgress(progress);
-      },
-      (error) => {
-        reject(new Error(error.message || "Upload failed"));
-      },
-      async () => {
-        try {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          resolve(downloadURL);
-        } catch (error) {
-          reject(new Error("Failed to get download URL"));
-        }
-      }
-    );
-  });
+  onProgress(70);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('images')
+    .getPublicUrl(filename);
+
+  onProgress(100);
+  return publicUrl;
 };
 
 export default function AdminCustomSections() {
