@@ -2,20 +2,18 @@
 
 import React, { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { getFAQ } from "@/lib/storage";
+import { getFAQ, getLanguage } from "@/lib/storage";
 import { FAQItem, Language } from "@/lib/types";
 
-interface FAQSectionProps {
-  language?: Language;
-}
-
-export default function FAQSection({ language = "fr" }: FAQSectionProps) {
+export default function FAQSection() {
   const [faq, setFaq] = useState<FAQItem[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [language, setLanguage] = useState<Language>("fr");
 
   useEffect(() => {
+    setFaq(getFAQ());
+    setLanguage(getLanguage());
     const data = getFAQ();
-    setFaq(data);
     if (data.length > 0) {
       setOpenId(data[0].id);
     }
