@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import JsonLd from "../components/JsonLd";
 import Hero from "@/components/Hero";
 import TrustBar from "@/components/TrustBar";
@@ -31,44 +31,55 @@ const defaultVisibility: SectionVisibility = {
   cta: true,
 };
 
+const defaultOrder = [
+  "hero", "trustBar", "products", "whyChooseUs", "story", "occasions", "packs", "testimonials", "delivery", "faq", "cta"
+];
+
+const sectionComponents: Record<string, React.ReactNode> = {
+  hero: <Hero />,
+  trustBar: <TrustBar />,
+  products: <ProductsSection />,
+  whyChooseUs: <WhyChooseUs />,
+  story: <StorySection />,
+  occasions: <OccasionsSection />,
+  packs: <PacksSection />,
+  testimonials: <Testimonials />,
+  delivery: <DeliverySection />,
+  faq: <FAQSection />,
+  cta: <CTASection />,
+};
+
 export default function Home() {
   const [visibility, setVisibility] = useState<SectionVisibility | null>(null);
+  const [sectionOrder, setSectionOrder] = useState<string[]>(defaultOrder);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     const content = getSiteContent();
     setVisibility(content.visibility || defaultVisibility);
-    
-    const handleStorageChange = () => {
-      const updatedContent = getSiteContent();
-      setVisibility(updatedContent.visibility || defaultVisibility);
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    setSectionOrder(content.sectionOrder || defaultOrder);
   }, []);
 
   if (!mounted || visibility === null) {
     return <div style={{ display: 'none' }}></div>;
   }
 
+  const renderSection = (key: string) => {
+    if (key === "custom") return <CustomSectionsRenderer />;
+    if (!visibility[key as keyof SectionVisibility]) return null;
+    return sectionComponents[key];
+  };
+
   return (
     <>
       <JsonLd type="FAQPage" />
       <div className="flex flex-col">
-        {visibility.hero && <Hero />}
-        {visibility.trustBar && <TrustBar />}
-        {visibility.products && <ProductsSection />}
-        {visibility.whyChooseUs && <WhyChooseUs />}
-        {visibility.story && <StorySection />}
-        {visibility.occasions && <OccasionsSection />}
-        {visibility.packs && <PacksSection />}
-        {visibility.testimonials && <Testimonials />}
-        {visibility.delivery && <DeliverySection />}
-        {visibility.faq && <FAQSection />}
-        {visibility.cta && <CTASection />}
-        <CustomSectionsRenderer />
+        {sectionOrder.map((key) => (
+          <React.Fragment key={key}>
+            {renderSection(key)}
+          </React.Fragment>
+        ))}
       </div>
     </>
   );

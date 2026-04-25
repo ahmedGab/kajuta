@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { getSiteContent, saveSiteContent } from "@/lib/storage";
 import { SectionVisibility } from "@/lib/types";
-import { Save, Eye, EyeOff } from "lucide-react";
+import { Save, Eye, EyeOff, ChevronUp, ChevronDown, GripVertical, Layers } from "lucide-react";
 
 const sectionsList = [
   { key: "hero" as const, label: "Hero (Bannière principale)", description: "La section d'accueil avec image et boutons" },
@@ -18,6 +18,11 @@ const sectionsList = [
   { key: "faq" as const, label: "FAQ", description: "Questions fréquentes" },
   { key: "cta" as const, label: "CTA Final", description: "Bouton de commande WhatsApp" },
 ];
+
+type SectionOrder = {
+  key: keyof SectionVisibility | "custom";
+  label: string;
+};
 
 export default function AdminSectionVisibility() {
   const content = getSiteContent();
@@ -36,14 +41,36 @@ export default function AdminSectionVisibility() {
     cta: true,
   });
 
+  const [sectionOrder, setSectionOrder] = useState<SectionOrder[]>(() => {
+    const stored = content.sectionOrder;
+    if (stored && stored.length === sectionsList.length) {
+      return stored;
+    }
+    return sectionsList.map(s => ({ key: s.key, label: s.label }));
+  });
+
+  const customSectionsCount = (content.customSections || []).filter(s => s.enabled).length;
+
   const handleToggle = (key: keyof SectionVisibility) => {
     setVisibility(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const handleMoveSection = (index: number, direction: "up" | "down") => {
+    if (direction === "up" && index > 0) {
+      const newOrder = [...sectionOrder];
+      [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
+      setSectionOrder(newOrder);
+    } else if (direction === "down" && index < sectionOrder.length - 1) {
+      const newOrder = [...sectionOrder];
+      [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+      setSectionOrder(newOrder);
+    }
+  };
+
   const handleSave = () => {
-    const newContent = { ...content, visibility };
+    const newContent = { ...content, visibility, sectionOrder };
     saveSiteContent(newContent);
-    setNotification("Visibilité des sections sauvegardée ! La page va se mettre à jour...");
+    setNotification("Configuration sauvegardée ! La page va se mettre à jour...");
     setTimeout(() => {
       setNotification("");
       window.location.reload();
@@ -70,7 +97,6 @@ export default function AdminSectionVisibility() {
   };
 
   const visibleCount = Object.values(visibility).filter(Boolean).length;
-  const totalCount = Object.keys(visibility).length;
 
   return (
     <div className="space-y-6">
@@ -80,11 +106,74 @@ export default function AdminSectionVisibility() {
         </div>
       )}
 
+      {/* Ordre des Sections */}
+      <div className="bg-white p-6 rounded-xl border border-gray-200">
+        <h3 className="font-bold text-lg mb-4">Ordre des Sections</h3>
+        <p className="text-gray-500 text-sm mb-4">Cliquez sur les flèches pour changer l&apos;ordre d&apos;affichage des sections.</p>
+        
+        <div className="space-y-2">
+          {sectionOrder.map((section, idx) => {
+            const isCustom = section.key === "custom";
+            const isVisible = !isCustom && visibility[section.key as keyof SectionVisibility];
+            
+            return (
+              <div 
+                key={`${section.key}-${idx}`}
+                className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                  isVisible 
+                    ? "border-green/30 bg-green/5" 
+                    : "border-gray-200 bg-gray-50 opacity-60"
+                }`}
+              >
+                <span className="text-gray-400 font-mono text-sm w-6 text-center">{idx + 1}</span>
+                <div className="cursor-grab text-gray-400">
+                  <GripVertical size={18} />
+                </div>
+                <button
+                  onClick={() => handleMoveSection(idx, "up")}
+                  disabled={idx === 0}
+                  className="p-1 text-gray-500 hover:text-green disabled:opacity-30"
+                >
+                  <ChevronUp size={18} />
+                </button>
+                <button
+                  onClick={() => handleMoveSection(idx, "down")}
+                  disabled={idx === sectionOrder.length - 1}
+                  className="p-1 text-gray-500 hover:text-green disabled:opacity-30"
+                >
+                  <ChevronDown size={18} />
+                </button>
+                <span className={`flex-1 font-medium ${isVisible ? "text-chocolate" : "text-gray-400"}`}>
+                  {isCustom ? (
+                    <span className="flex items-center gap-2">
+                      <Layers size={16} />
+                      Sections Personnalisées ({customSectionsCount})
+                    </span>
+                  ) : (
+                    section.label
+                  )}
+                </span>
+                {!isCustom && (
+                  <div className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${
+                    isVisible ? "bg-green" : "bg-gray-300"
+                  }`} onClick={() => handleToggle(section.key as keyof SectionVisibility)}>
+                    <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                      isVisible ? "left-5" : "left-0.5"
+                    }`}></div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Visibilité rapide */}
       <div className="bg-white p-6 rounded-xl border border-gray-200">
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h3 className="font-bold text-lg">Visibilité des Sections</h3>
-            <p className="text-gray-500 text-sm">{visibleCount}/{totalCount} sections visibles sur le site</p>
+            <h3 className="font-bold text-lg">Visibilité Rápide</h3>
+            <p className="text-gray-500 text-sm">{visibleCount}/{sectionsList.length} sections actives</p>
           </div>
           <button 
             onClick={handleEnableAll}
@@ -130,26 +219,8 @@ export default function AdminSectionVisibility() {
         </div>
       </div>
 
-      <div className="bg-cream p-4 rounded-xl border border-gray-200">
-        <h4 className="font-semibold text-sm mb-2">Aperçu de l&apos;ordre des sections</h4>
-        <div className="flex flex-wrap gap-2">
-          {sectionsList.map(({ key, label }) => (
-            <span 
-              key={key}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                visibility[key] 
-                  ? "bg-green text-white" 
-                  : "bg-gray-200 text-gray-500 line-through"
-              }`}
-            >
-              {label}
-            </span>
-          ))}
-        </div>
-      </div>
-
       <button onClick={handleSave} className="btn-primary py-2 px-6 flex items-center gap-2">
-        <Save size={18} /> Sauvegarder la visibilité
+        <Save size={18} /> Sauvegarder la configuration
       </button>
     </div>
   );

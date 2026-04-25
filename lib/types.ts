@@ -81,7 +81,6 @@ export type SectionVisibility = {
   delivery: boolean;
   faq: boolean;
   cta: boolean;
-  customSections: boolean;
 };
 
 export type CustomSection = {
@@ -104,6 +103,7 @@ export type CustomSectionItem = {
 
 export type SiteContent = {
   visibility: SectionVisibility;
+  sectionOrder: (keyof SectionVisibility | "custom")[];
   logo?: string;
   hero: {
     title: LocalizedString;
