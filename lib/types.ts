@@ -1,5 +1,19 @@
 export type Language = "fr" | "ar";
 
+export type ContentBlockType = "text" | "card" | "image" | "stat";
+
+export type ContentBlock = {
+  id: string;
+  type: ContentBlockType;
+  titleFr: string;
+  titleAr: string;
+  contentFr: string;
+  contentAr: string;
+  image?: string;
+  statNumber?: number;
+  icon?: string;
+};
+
 export type LocalizedString = {
   fr: string;
   ar: string;
@@ -103,7 +117,6 @@ export type CustomSectionItem = {
 
 export type SiteContent = {
   visibility: SectionVisibility;
-  sectionOrder: { key: string; label: string }[];
   logo?: string;
   hero: {
     title: LocalizedString;
@@ -158,6 +171,15 @@ export type SiteContent = {
   finalCta: {
     title: LocalizedString;
     text: LocalizedString;
+    button: LocalizedString;
+  };
+  images: {
+    hero?: string;
+    story?: string;
+    products?: string;
+    packs?: string;
+    about?: string;
   };
   customSections: CustomSection[];
+  sectionOrder: { key: string; label: string }[];
 };

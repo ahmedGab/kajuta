@@ -109,7 +109,6 @@ export default function AdminSectionVisibility() {
     dragItem.current = index;
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.opacity = 0.5;
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
@@ -177,7 +176,7 @@ export default function AdminSectionVisibility() {
 
   const getToggleHandler = (section: SectionOrderItem) => {
     if (section.isCustom && section.customId) {
-      return () => handleToggleCustomSection(section.customId);
+      return () => handleToggleCustomSection(section.customId!);
     }
     return () => handleToggle(section.key as keyof SectionVisibility);
   };

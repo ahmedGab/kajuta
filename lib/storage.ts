@@ -4,12 +4,14 @@ import { SiteContent, Product, Testimonial, FAQItem, SectionKey, Language } from
 import { defaultSiteContent } from "@/data/siteContent";
 import { defaultProducts } from "@/data/products";
 import { defaultTestimonials, defaultFAQ } from "@/data/faq";
+import * as db from "./db";
 
 const CONTENT_STORAGE_KEY = "cajuta_site_content";
 const PRODUCTS_STORAGE_KEY = "cajuta_products";
 const TESTIMONIALS_STORAGE_KEY = "cajuta_testimonials";
 const FAQ_STORAGE_KEY = "cajuta_faq";
 const LANGUAGE_STORAGE_KEY = "cajuta_language";
+const FIRESTORE_INITIALIZED_KEY = "cajuta_firestore_initialized";
 
 export function getLanguage(): Language {
   if (typeof window === "undefined") return "fr";
@@ -40,9 +42,10 @@ export function getSiteContent(): SiteContent {
   return defaultSiteContent;
 }
 
-export function saveSiteContent(content: SiteContent): void {
-  if (typeof window === "undefined") return;
+export async function saveSiteContent(content: SiteContent): Promise<boolean> {
+  if (typeof window === "undefined") return false;
   localStorage.setItem(CONTENT_STORAGE_KEY, JSON.stringify(content));
+  return await db.saveSiteContent(content);
 }
 
 export function resetSiteContent(): void {
@@ -50,7 +53,6 @@ export function resetSiteContent(): void {
   localStorage.setItem(CONTENT_STORAGE_KEY, JSON.stringify(defaultSiteContent));
 }
 
-// Paragraph management with bilingual support
 export function addParagraph(section: SectionKey, language: Language, paragraph: string): void {
   const content = getSiteContent();
   content[section].paragraphs[language].push(paragraph);
@@ -90,7 +92,6 @@ export function moveParagraph(section: SectionKey, language: Language, index: nu
   saveSiteContent(content);
 }
 
-// Products
 export function getProducts(): Product[] {
   if (typeof window === "undefined") return defaultProducts;
   
@@ -105,9 +106,10 @@ export function getProducts(): Product[] {
   return defaultProducts;
 }
 
-export function saveProducts(products: Product[]): void {
-  if (typeof window === "undefined") return;
+export async function saveProducts(products: Product[]): Promise<boolean> {
+  if (typeof window === "undefined") return false;
   localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(products));
+  return await db.saveProducts(products);
 }
 
 export function resetProducts(): void {
@@ -115,7 +117,6 @@ export function resetProducts(): void {
   localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(defaultProducts));
 }
 
-// Testimonials
 export function getTestimonials(): Testimonial[] {
   if (typeof window === "undefined") return defaultTestimonials;
   
@@ -130,12 +131,12 @@ export function getTestimonials(): Testimonial[] {
   return defaultTestimonials;
 }
 
-export function saveTestimonials(testimonials: Testimonial[]): void {
-  if (typeof window === "undefined") return;
+export async function saveTestimonials(testimonials: Testimonial[]): Promise<boolean> {
+  if (typeof window === "undefined") return false;
   localStorage.setItem(TESTIMONIALS_STORAGE_KEY, JSON.stringify(testimonials));
+  return await db.saveTestimonials(testimonials);
 }
 
-// FAQ
 export function getFAQ(): FAQItem[] {
   if (typeof window === "undefined") return defaultFAQ;
   
@@ -150,7 +151,38 @@ export function getFAQ(): FAQItem[] {
   return defaultFAQ;
 }
 
-export function saveFAQ(faq: FAQItem[]): void {
-  if (typeof window === "undefined") return;
+export async function saveFAQ(faq: FAQItem[]): Promise<boolean> {
+  if (typeof window === "undefined") return false;
   localStorage.setItem(FAQ_STORAGE_KEY, JSON.stringify(faq));
+  return await db.saveFAQ(faq);
+}
+
+export async function syncToFirestore(): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  try {
+    const siteContent = getSiteContent();
+    await db.saveSiteContent(siteContent);
+
+    const products = getProducts();
+    await db.saveProducts(products);
+
+    const testimonials = getTestimonials();
+    await db.saveTestimonials(testimonials);
+
+    const faq = getFAQ();
+    await db.saveFAQ(faq);
+
+    localStorage.setItem(FIRESTORE_INITIALIZED_KEY, "true");
+    return { success: true, message: "Données synchronisées avec succès!" };
+  } catch (error) {
+    console.error("Sync error:", error);
+    return { success: false, message: "Erreur lors de la synchronisation" };
+  }
+}
+
+export function isFirestoreInitialized(): boolean {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(FIRESTORE_INITIALIZED_KEY) === "true";
 }

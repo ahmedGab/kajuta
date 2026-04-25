@@ -237,7 +237,25 @@ export const defaultSiteContent: SiteContent = {
     text: {
       fr: "Passez votre commande maintenant et recevez vos délices dans les plus brefs délais.",
       ar: "قدم طلبك الان واستلم لذيذاتك في اقرب وقت ممكن."
+    },
+    button: {
+      fr: "Commander",
+      ar: "اطلب الآن"
     }
   },
+  images: {},
+  sectionOrder: [
+    { key: "hero", label: "Hero" },
+    { key: "trustBar", label: "Barre de confiance" },
+    { key: "products", label: "Produits" },
+    { key: "whyChooseUs", label: "Pourquoi nous choisir" },
+    { key: "story", label: "Notre histoire" },
+    { key: "occasions", label: "Occasions" },
+    { key: "packs", label: "Packs" },
+    { key: "testimonials", label: "Avis clients" },
+    { key: "delivery", label: "Livraison" },
+    { key: "faq", label: "FAQ" },
+    { key: "cta", label: "Call to Action" }
+  ],
   customSections: []
 };

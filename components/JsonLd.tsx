@@ -15,10 +15,10 @@ export default function JsonLd({ type, data }: JsonLdProps) {
       "@type": "FAQPage",
       mainEntity: defaultFAQ.map((item) => ({
         "@type": "Question",
-        name: item.question,
+        name: item.questionFr,
         acceptedAnswer: {
           "@type": "Answer",
-          text: item.answer,
+          text: item.answerFr,
         },
       })),
     };

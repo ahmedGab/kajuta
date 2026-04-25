@@ -2,10 +2,10 @@
 
 import React, { useState } from "react";
 import { getSiteContent, saveSiteContent } from "@/lib/storage";
-import { CustomSection, CustomSectionItem } from "@/lib/types";
+import { CustomSection, CustomSectionItem, ContentBlockType } from "@/lib/types";
 import { Plus, Trash2, Save, X, Edit2, Image as ImageIcon, Type, AlignLeft, ChevronUp, ChevronDown, Upload } from "lucide-react";
 
-const contentTypes = [
+const contentTypes: { type: ContentBlockType; label: string; icon: typeof Type; description: string }[] = [
   { type: "text", label: "Texte", icon: Type, description: "Titre + paragraphe" },
   { type: "card", label: "Carte", icon: AlignLeft, description: "Carte avec icône" },
   { type: "image", label: "Image", icon: ImageIcon, description: "Image avec texte" },

@@ -48,7 +48,7 @@ export default function FAQPage() {
             </p>
           </div>
           
-          <FAQSection language={language} />
+          <FAQSection />
         </div>
       </div>
     </>
