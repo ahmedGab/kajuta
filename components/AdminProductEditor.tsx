@@ -11,31 +11,63 @@ export default function AdminProductEditor() {
   const [isAdding, setIsAdding] = useState(false);
   const [notification, setNotification] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [tempPreview, setTempPreview] = useState<string>("");
+
+  const uploadFileWithProgress = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/upload");
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(percent);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            if (data.success) resolve(data.url);
+            else reject(new Error(data.error));
+          } catch (e) {
+            reject(new Error("Invalid response"));
+          }
+        } else {
+          reject(new Error("Server error"));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error("Network error"));
+
+      const formData = new FormData();
+      formData.append("file", file);
+      xhr.send(formData);
+    });
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editingProduct) return;
 
     setIsUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
+    setUploadProgress(0);
+    const preview = URL.createObjectURL(file);
+    setTempPreview(preview);
 
     try {
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      if (data.success) {
-        setEditingProduct({...editingProduct, image: data.url});
-        showNotification("Image téléchargée avec succès.");
-      } else {
-        alert("Erreur serveur lors de l'upload: " + data.error);
-      }
-    } catch(err) {
-      alert("Erreur réseau lors de l'upload");
+      const url = await uploadFileWithProgress(file);
+      setEditingProduct({ ...editingProduct, image: url });
+      setTempPreview("");
+      showNotification("Image téléchargée avec succès.");
+    } catch (err) {
+      alert("Erreur lors de l'upload: " + (err as Error).message);
+      setTempPreview("");
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -144,24 +176,44 @@ export default function AdminProductEditor() {
               <textarea className="w-full p-2 border rounded h-24" value={editingProduct.description} onChange={(e) => setEditingProduct({...editingProduct, description: e.target.value})} />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold mb-1">URL Image ou Fichier Local</label>
-              <input type="text" className="w-full p-2 border rounded mb-2" value={editingProduct.image} onChange={(e) => setEditingProduct({...editingProduct, image: e.target.value})} placeholder="https://..." />
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-medium text-gray-500">OU</span>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  disabled={isUploading}
-                  className="block w-full text-sm text-gray-500
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-full file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-green/10 file:text-green
-                    hover:file:bg-green/20"
-                />
+              <label className="block text-sm font-semibold mb-1">Image du produit</label>
+              <div className="flex gap-6">
+                <div className="flex-1">
+                  <input type="text" className="w-full p-2 border rounded mb-2" value={editingProduct.image} onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })} placeholder="https://..." />
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-medium text-gray-500">OU</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      disabled={isUploading}
+                      className="block w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-green/10 file:text-green
+                        hover:file:bg-green/20"
+                    />
+                  </div>
+                  {isUploading && (
+                    <div className="mt-3">
+                      <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div className="bg-green h-2.5 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
+                      </div>
+                      <p className="text-xs text-green font-semibold mt-1">{uploadProgress}%</p>
+                    </div>
+                  )}
+                </div>
+                <div className="w-32 h-32 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200">
+                  {tempPreview ? (
+                    <img src={tempPreview} alt="Preview" className="w-full h-full object-cover" />
+                  ) : editingProduct.image ? (
+                    <img src={editingProduct.image} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">Aucune image</div>
+                  )}
+                </div>
               </div>
-              {isUploading && <p className="text-sm text-amber-600 mt-1">Téléchargement en cours...</p>}
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold mb-1">Texte ALT image</label>
