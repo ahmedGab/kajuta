@@ -43,8 +43,11 @@ export default function AdminSectionVisibility() {
   const handleSave = () => {
     const newContent = { ...content, visibility };
     saveSiteContent(newContent);
-    setNotification("Visibilité des sections sauvegardée !");
-    setTimeout(() => setNotification(""), 3000);
+    setNotification("Visibilité des sections sauvegardée ! La page va se mettre à jour...");
+    setTimeout(() => {
+      setNotification("");
+      window.location.reload();
+    }, 1500);
   };
 
   const handleEnableAll = () => {

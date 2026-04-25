@@ -31,14 +31,26 @@ const defaultVisibility: SectionVisibility = {
 };
 
 export default function Home() {
-  const [visibility, setVisibility] = useState<SectionVisibility>(defaultVisibility);
+  const [visibility, setVisibility] = useState<SectionVisibility | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const content = getSiteContent();
-    if (content.visibility) {
-      setVisibility(content.visibility);
-    }
+    setVisibility(content.visibility || defaultVisibility);
+    
+    const handleStorageChange = () => {
+      const updatedContent = getSiteContent();
+      setVisibility(updatedContent.visibility || defaultVisibility);
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
+
+  if (!mounted || visibility === null) {
+    return <div style={{ display: 'none' }}></div>;
+  }
 
   return (
     <>
