@@ -2,26 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+@layer components {
+  body {
+    @apply bg-background text-chocolate font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-semibold;
+  }
+
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-padding {
+    @apply py-16 md:py-24;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-full text-white bg-green hover:bg-olive transition-colors duration-300 shadow-green;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3 border-2 border-green text-base font-medium rounded-full text-green bg-transparent hover:bg-green hover:text-white transition-colors duration-300;
+  }
+
+  .btn-caramel {
+    @apply inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-full text-white bg-caramel hover:bg-honey transition-colors duration-300 shadow-premium;
+  }
+
+  .card-premium {
+    @apply bg-white rounded-3xl shadow-soft hover:shadow-premium transition-shadow duration-300 overflow-hidden;
+  }
+
+  .badge-green {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-mint text-green;
   }
 }

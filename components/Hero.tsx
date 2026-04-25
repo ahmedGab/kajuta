@@ -1,0 +1,64 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { getSiteContent, getLanguage } from "@/lib/storage";
+import { SiteContent, Language } from "@/lib/types";
+import { defaultSiteContent } from "@/data/siteContent";
+
+export default function Hero() {
+  const [content, setContent] = useState<SiteContent["hero"]>(defaultSiteContent.hero);
+  const [language, setLanguage] = useState<Language>("fr");
+
+  useEffect(() => {
+    setContent(getSiteContent().hero);
+    setLanguage(getLanguage());
+  }, []);
+
+  const isRTL = language === "ar";
+
+  return (
+    <section className="relative bg-cream overflow-hidden min-h-[90vh] flex items-center">
+      <div className="absolute inset-0 z-0">
+        <div className={`absolute inset-0 bg-gradient-to-r from-cream via-cream/80 to-transparent z-10 ${isRTL ? 'lg:bg-gradient-to-l' : 'lg:bg-gradient-to-r'} w-full lg:w-2/3 h-full`}></div>
+        <Image
+          src={content.image}
+          alt={language === "ar" ? "فواكة جافة مكرملة" : "Fruits secs caramélisés"}
+          fill
+          className="object-cover"
+          priority
+        />
+      </div>
+
+      <div className="container-custom relative z-20">
+        <div className={`max-w-2xl pt-20 pb-24 md:pt-32 md:pb-36 ${isRTL ? 'lg:mr-auto lg:ml-0' : 'lg:ml-0'}`}>
+          <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full bg-honey/10 text-caramel text-sm font-medium mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <span className="w-2 h-2 rounded-full bg-caramel"></span>
+            {language === "ar" ? "جودة حرفية تونسية" : "Qualité Artisanale Tunisienne"}
+          </div>
+          <h1 
+            className={`text-5xl md:text-6xl lg:text-7xl font-display font-bold text-chocolate leading-tight mb-6 ${isRTL ? 'text-right' : 'text-left'}`}
+            style={{ direction: isRTL ? "rtl" : "ltr" }}
+          >
+            {content.title[language]}
+          </h1>
+          <p 
+            className={`text-lg md:text-xl text-chocolate/80 mb-10 max-w-lg leading-relaxed ${isRTL ? 'text-right' : 'text-left'}`}
+            style={{ direction: isRTL ? "rtl" : "ltr" }}
+          >
+            {content.subtitle[language]}
+          </p>
+          <div className={`flex flex-col sm:flex-row gap-4 ${isRTL ? 'sm:flex-row-reverse' : ''}`}>
+            <Link href="/produits" className="btn-primary py-4 px-8 text-lg text-center">
+              {content.primaryButton[language]}
+            </Link>
+            <a href="https://wa.me/21650123456" target="_blank" rel="noopener noreferrer" className="btn-secondary py-4 px-8 text-lg bg-white/50 backdrop-blur-sm text-center">
+              {content.secondaryButton[language]}
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
