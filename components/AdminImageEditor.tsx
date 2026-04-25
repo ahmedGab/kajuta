@@ -33,11 +33,18 @@ export default function AdminImageEditor() {
 
   const uploadFileWithProgress = (file: File, key: string): Promise<string> => {
     return new Promise((resolve, reject) => {
+      console.log("Starting upload with config:", {
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+      });
+      
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
       const safeName = file.name ? file.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'uploaded_file';
       const filename = `${uniqueSuffix}-${safeName}`;
       
       const storageRef = ref(storage, `uploads/${filename}`);
+      
+      console.log("Storage ref created:", storageRef.fullPath);
       const uploadTask = uploadBytesResumable(storageRef, file);
 
       uploadTask.on(
