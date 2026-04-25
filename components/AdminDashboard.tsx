@@ -13,7 +13,8 @@ import AdminPacksEditor from "./AdminPacksEditor";
 import AdminFooterEditor from "./AdminFooterEditor";
 import AdminColorEditor from "./AdminColorEditor";
 import AdminSectionVisibility from "./AdminSectionVisibility";
-import { LayoutDashboard, LogOut, FileText, Package, Image as ImageIcon, MessageSquare, HelpCircle, Eye, RefreshCw, Gift, Footprints, Palette, Layout } from "lucide-react";
+import AdminCustomSections from "./AdminCustomSections";
+import { LayoutDashboard, LogOut, FileText, Package, Image as ImageIcon, MessageSquare, HelpCircle, Eye, RefreshCw, Gift, Footprints, Palette, Layout, Layers } from "lucide-react";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -46,6 +47,7 @@ export default function AdminDashboard() {
     { id: "paragraphes", name: "Paragraphes", icon: <FileText size={18} /> },
     { id: "produits", name: "Produits", icon: <Package size={18} /> },
     { id: "packs", name: "Packs", icon: <Gift size={18} /> },
+    { id: "custom", name: "Sections+", icon: <Layers size={18} /> },
     { id: "footer", name: "Footer", icon: <Footprints size={18} /> },
     { id: "couleurs", name: "Couleurs", icon: <Palette size={18} /> },
     { id: "sections", name: "Sections", icon: <Layout size={18} /> },
@@ -113,6 +115,7 @@ export default function AdminDashboard() {
             {activeTab === "paragraphes" && <AdminParagraphEditor />}
             {activeTab === "produits" && <AdminProductEditor />}
             {activeTab === "packs" && <AdminPacksEditor />}
+            {activeTab === "custom" && <AdminCustomSections />}
             {activeTab === "footer" && <AdminFooterEditor />}
             {activeTab === "couleurs" && <AdminColorEditor />}
             {activeTab === "sections" && <AdminSectionVisibility />}

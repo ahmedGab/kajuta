@@ -81,6 +81,25 @@ export type SectionVisibility = {
   delivery: boolean;
   faq: boolean;
   cta: boolean;
+  customSections: boolean;
+};
+
+export type CustomSection = {
+  id: string;
+  enabled: boolean;
+  titleFr: string;
+  titleAr: string;
+  columns: 1 | 2 | 3 | 4;
+  background: "background" | "cream" | "white" | "green" | "caramel";
+  items: CustomSectionItem[];
+  order: number;
+};
+
+export type CustomSectionItem = {
+  id: string;
+  contentFr: string;
+  contentAr: string;
+  image?: string;
 };
 
 export type SiteContent = {
@@ -140,4 +159,5 @@ export type SiteContent = {
     title: LocalizedString;
     text: LocalizedString;
   };
+  customSections: CustomSection[];
 };

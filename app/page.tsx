@@ -13,6 +13,7 @@ import Testimonials from "@/components/Testimonials";
 import DeliverySection from "@/components/DeliverySection";
 import FAQSection from "@/components/FAQSection";
 import CTASection from "@/components/CTASection";
+import CustomSectionsRenderer from "@/components/CustomSectionsRenderer";
 import { getSiteContent } from "@/lib/storage";
 import { SectionVisibility } from "@/lib/types";
 
@@ -67,6 +68,7 @@ export default function Home() {
         {visibility.delivery && <DeliverySection />}
         {visibility.faq && <FAQSection />}
         {visibility.cta && <CTASection />}
+        <CustomSectionsRenderer />
       </div>
     </>
   );

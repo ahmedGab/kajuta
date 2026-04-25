@@ -236,7 +236,8 @@ export const defaultSiteContent: SiteContent = {
     },
     text: {
       fr: "Passez votre commande maintenant et recevez vos délices dans les plus brefs délais.",
-      ar: "قدم طلبك الان واستلم لذيذاتك ف�� اق��ب وقت ممكن."
+      ar: "قدم طلبك الان واستلم لذيذاتك في اقرب وقت ممكن."
     }
-  }
+  },
+  customSections: []
 };
