@@ -11,7 +11,7 @@ const FacebookIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill=
 export default function Footer() {
   const content = getSiteContent();
   const lang = getLanguage();
-  const footerParagraphs = content.footer.paragraphs[lang];
+
   return (
     <footer className="bg-green text-white pt-16 pb-8">
       <div className="container-custom">
@@ -24,7 +24,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-mint text-sm leading-relaxed mb-6">
-              Fruits secs caramélisés en Tunisie. Une expérience artisanale, gourmande et premium pour sublimer vos moments de partage.
+              {content.footer.description[lang]}
             </p>
             <div className="flex gap-4">
               <a href="#" className="h-10 w-10 rounded-full bg-olive/50 flex items-center justify-center hover:bg-caramel transition-colors">
@@ -38,48 +38,48 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-display font-semibold text-lg mb-5 text-white">Liens Rapides</h3>
+            <h3 className="font-display font-semibold text-lg mb-5 text-white">{content.footer.quickLinks.title[lang]}</h3>
             <ul className="space-y-3">
-              <li><Link href="/" className="text-mint hover:text-honey transition-colors">Accueil</Link></li>
-              <li><Link href="/produits" className="text-mint hover:text-honey transition-colors">Nos Produits</Link></li>
-              <li><Link href="/a-propos" className="text-mint hover:text-honey transition-colors">Notre Histoire</Link></li>
-              <li><Link href="/faq" className="text-mint hover:text-honey transition-colors">FAQ</Link></li>
+              {content.footer.quickLinks.links.map((link, idx) => (
+                <li key={idx}>
+                  <Link href={link.href} className="text-mint hover:text-honey transition-colors">{link.label[lang]}</Link>
+                </li>
+              ))}
             </ul>
           </div>
 
           {/* Targeted Cities */}
           <div>
-            <h3 className="font-display font-semibold text-lg mb-5 text-white">Nos Zones de Livraison</h3>
+            <h3 className="font-display font-semibold text-lg mb-5 text-white">{content.footer.deliveryZones.title[lang]}</h3>
             <ul className="space-y-3">
-              <li className="text-mint flex items-center gap-2"><MapPin size={16} /> Tunis & Banlieue</li>
-              <li className="text-mint flex items-center gap-2"><MapPin size={16} /> Sfax</li>
-              <li className="text-mint flex items-center gap-2"><MapPin size={16} /> Sousse & Monastir</li>
-              <li className="text-mint flex items-center gap-2"><MapPin size={16} /> Nabeul & Hammamet</li>
+              {content.footer.deliveryZones.zones.map((zone, idx) => (
+                <li key={idx} className="text-mint flex items-center gap-2"><MapPin size={16} /> {zone[lang]}</li>
+              ))}
             </ul>
           </div>
 
           {/* Contact */}
           <div>
-            <h3 className="font-display font-semibold text-lg mb-5 text-white">Contact</h3>
+            <h3 className="font-display font-semibold text-lg mb-5 text-white">{content.footer.contact.title[lang]}</h3>
             <ul className="space-y-4">
               <li className="text-mint flex items-start gap-3">
                 <MapPin size={20} className="shrink-0 mt-0.5 text-honey" />
-                <span>Atelier Artisanal<br/>Tunis, Tunisie</span>
+                <span style={{ whiteSpace: "pre-line" }}>{content.footer.contact.address[lang]}</span>
               </li>
               <li className="text-mint flex items-center gap-3">
                 <Phone size={20} className="shrink-0 text-honey" />
-                <span>+216 50 123 456</span>
+                <span>{content.footer.contact.phone[lang]}</span>
               </li>
               <li className="text-mint flex items-center gap-3">
                 <Mail size={20} className="shrink-0 text-honey" />
-                <span>contact@cajuta.tn</span>
+                <span>{content.footer.contact.email[lang]}</span>
               </li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-olive pt-8 text-center sm:flex sm:flex-col sm:items-center gap-2">
-          {footerParagraphs.map((para, idx) => (
+          {content.footer.paragraphs[lang].map((para, idx) => (
             <p key={idx} className="text-mint/80 text-sm">{para}</p>
           ))}
           <div className="flex justify-center flex-wrap gap-4 text-sm text-mint/80 mt-2">

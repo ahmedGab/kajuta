@@ -104,6 +104,21 @@ export type SiteContent = {
     items: BilingualPack[];
   };
   footer: {
+    description: LocalizedString;
+    quickLinks: {
+      title: LocalizedString;
+      links: { label: LocalizedString; href: string }[];
+    };
+    deliveryZones: {
+      title: LocalizedString;
+      zones: LocalizedString[];
+    };
+    contact: {
+      title: LocalizedString;
+      address: LocalizedString;
+      phone: LocalizedString;
+      email: LocalizedString;
+    };
     paragraphs: LocalizedParagraphs;
   };
   finalCta: {

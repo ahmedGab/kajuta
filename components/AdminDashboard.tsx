@@ -10,7 +10,8 @@ import AdminFAQEditor from "./AdminFAQEditor";
 import AdminTestimonialEditor from "./AdminTestimonialEditor";
 import AdminImageEditor from "./AdminImageEditor";
 import AdminPacksEditor from "./AdminPacksEditor";
-import { LayoutDashboard, LogOut, FileText, Package, Image as ImageIcon, MessageSquare, HelpCircle, Eye, RefreshCw, Gift } from "lucide-react";
+import AdminFooterEditor from "./AdminFooterEditor";
+import { LayoutDashboard, LogOut, FileText, Package, Image as ImageIcon, MessageSquare, HelpCircle, Eye, RefreshCw, Gift, Footer as FooterIcon } from "lucide-react";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -43,6 +44,7 @@ export default function AdminDashboard() {
     { id: "paragraphes", name: "Paragraphes", icon: <FileText size={18} /> },
     { id: "produits", name: "Produits", icon: <Package size={18} /> },
     { id: "packs", name: "Packs", icon: <Gift size={18} /> },
+    { id: "footer", name: "Footer", icon: <FooterIcon size={18} /> },
     { id: "images", name: "Images", icon: <ImageIcon size={18} /> },
     { id: "avis", name: "Avis Clients", icon: <MessageSquare size={18} /> },
     { id: "faq", name: "FAQ", icon: <HelpCircle size={18} /> },
@@ -107,6 +109,7 @@ export default function AdminDashboard() {
             {activeTab === "paragraphes" && <AdminParagraphEditor />}
             {activeTab === "produits" && <AdminProductEditor />}
             {activeTab === "packs" && <AdminPacksEditor />}
+            {activeTab === "footer" && <AdminFooterEditor />}
             {activeTab === "images" && <AdminImageEditor />}
             {activeTab === "avis" && <AdminTestimonialEditor />}
             {activeTab === "faq" && <AdminFAQEditor />}

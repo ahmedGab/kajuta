@@ -159,6 +159,52 @@ export const defaultSiteContent: SiteContent = {
     ]
   },
   footer: {
+    description: {
+      fr: "Fruits secs caramélisés en Tunisie. Une expérience artisanale, gourmande et premium pour sublimer vos moments de partage.",
+      ar: "فواكة جافة مكرملة في تونس. تجربة حرفية ولذيذة وفاخرة لترتقي بلحظاتك."
+    },
+    quickLinks: {
+      title: {
+        fr: "Liens Rapides",
+        ar: "روابط سريعة"
+      },
+      links: [
+        { label: { fr: "Accueil", ar: "الرئيسية" }, href: "/" },
+        { label: { fr: "Nos Produits", ar: "منتجاتنا" }, href: "/produits" },
+        { label: { fr: "Notre Histoire", ar: "قصتنا" }, href: "/a-propos" },
+        { label: { fr: "FAQ", ar: "الأسئلة الشائعة" }, href: "/faq" }
+      ]
+    },
+    deliveryZones: {
+      title: {
+        fr: "Nos Zones de Livraison",
+        ar: "مناطق التوصيل"
+      },
+      zones: [
+        { fr: "Tunis & Banlieue", ar: "تونس وضواحيها" },
+        { fr: "Sfax", ar: "صفاقس" },
+        { fr: "Sousse & Monastir", ar: "سوسة والمنستير" },
+        { fr: "Nabeul & Hammamet", ar: "نابل والحمامات" }
+      ]
+    },
+    contact: {
+      title: {
+        fr: "Contact",
+        ar: "اتصل بنا"
+      },
+      address: {
+        fr: "Atelier Artisanal\nTunis, Tunisie",
+        ar: "ورشة حرفية\nتونس، تونس"
+      },
+      phone: {
+        fr: "+216 50 123 456",
+        ar: "+216 50 123 456"
+      },
+      email: {
+        fr: "contact@cajuta.tn",
+        ar: "contact@cajuta.tn"
+      }
+    },
     paragraphs: {
       fr: [
         "© 2024 Cajuta. Tous droits réservés.",
