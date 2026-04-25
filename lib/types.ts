@@ -89,7 +89,7 @@ export type CustomSection = {
   titleFr: string;
   titleAr: string;
   columns: 1 | 2 | 3 | 4;
-  background: "background" | "cream" | "white" | "green" | "caramel";
+  background: "background" | "cream" | "white" | "green" | "green-light" | "caramel";
   items: CustomSectionItem[];
   order: number;
 };

@@ -3,28 +3,49 @@
 import React, { useState } from "react";
 import { getSiteContent, saveSiteContent } from "@/lib/storage";
 import { CustomSection, CustomSectionItem, Language } from "@/lib/types";
-import { Plus, Trash2, Save, X, Edit2, GripVertical, ChevronUp, ChevronDown, Image as ImageIcon } from "lucide-react";
+import { Plus, Trash2, Save, X, Edit2, Image as ImageIcon, Type, AlignLeft, GripVertical, ChevronUp, ChevronDown } from "lucide-react";
+
+const contentTypes = [
+  { type: "text", label: "Texte", icon: Type, description: "Titre + paragraphe" },
+  { type: "card", label: "Carte", icon: AlignLeft, description: "Carte avec icône" },
+  { type: "image", label: "Image", icon: ImageIcon, description: "Image avec texte" },
+  { type: "stat", label: "Statistique", icon: Type, description: "Chiffre + description" },
+];
 
 const backgroundOptions = [
-  { value: "background" as const, label: "Fond Principal", color: "bg-background" },
-  { value: "cream" as const, label: "Crème", color: "bg-cream" },
-  { value: "white" as const, label: "Blanc", color: "bg-white" },
-  { value: "green" as const, label: "Vert", color: "bg-green text-white" },
-  { value: "caramel" as const, label: "Caramel", color: "bg-caramel text-white" },
+  { value: "background" as const, label: "Fond Principal", preview: "bg-background" },
+  { value: "cream" as const, label: "Crème", preview: "bg-cream" },
+  { value: "white" as const, label: "Blanc", preview: "bg-white" },
+  { value: "green" as const, label: "Vert Foncé", preview: "bg-green" },
+  { value: "green-light" as const, label: "Vert Clair", preview: "bg-mint" },
+  { value: "caramel" as const, label: "Caramel", preview: "bg-caramel" },
 ];
 
 const columnOptions = [
-  { value: 1 as const, label: "1 colonne", grid: "grid-cols-1" },
-  { value: 2 as const, label: "2 colonnes", grid: "grid-cols-1 md:grid-cols-2" },
-  { value: 3 as const, label: "3 colonnes", grid: "grid-cols-1 md:grid-cols-3" },
-  { value: 4 as const, label: "4 colonnes", grid: "grid-cols-1 md:grid-cols-2 lg:grid-cols-4" },
+  { value: 1 as const, label: "1 colonne" },
+  { value: 2 as const, label: "2 colonnes" },
+  { value: 3 as const, label: "3 colonnes" },
+  { value: 4 as const, label: "4 colonnes" },
 ];
+
+type ContentBlock = {
+  id: string;
+  type: "text" | "card" | "image" | "stat";
+  titleFr: string;
+  titleAr: string;
+  contentFr: string;
+  contentAr: string;
+  icon?: string;
+  image?: string;
+  number?: string;
+};
 
 export default function AdminCustomSections() {
   const content = getSiteContent();
   const [sections, setSections] = useState<CustomSection[]>(content.customSections || []);
   const [editingSection, setEditingSection] = useState<CustomSection | null>(null);
   const [notification, setNotification] = useState("");
+  const [selectedBlock, setSelectedBlock] = useState<ContentBlock | null>(null);
 
   const showNotification = (msg: string) => {
     setNotification(msg);
@@ -33,7 +54,7 @@ export default function AdminCustomSections() {
 
   const handleAdd = () => {
     const newSection: CustomSection = {
-      id: `custom-${Date.now()}`,
+      id: `section-${Date.now()}`,
       enabled: true,
       titleFr: "",
       titleAr: "",
@@ -49,8 +70,9 @@ export default function AdminCustomSections() {
   const handleSave = () => {
     const newContent = { ...content, customSections: sections };
     saveSiteContent(newContent);
-    showNotification("Sections personnalisées sauvegardées !");
+    showNotification("Sections sauvegardées !");
     setEditingSection(null);
+    setSelectedBlock(null);
     window.location.reload();
   };
 
@@ -60,7 +82,7 @@ export default function AdminCustomSections() {
     }
   };
 
-  const handleMove = (id: string, direction: "up" | "down") => {
+  const handleMoveSection = (id: string, direction: "up" | "down") => {
     const idx = sections.findIndex(s => s.id === id);
     if (direction === "up" && idx > 0) {
       const newSections = [...sections];
@@ -73,38 +95,103 @@ export default function AdminCustomSections() {
     }
   };
 
-  const handleAddItem = () => {
-    if (!editingSection) return;
-    const newItem: CustomSectionItem = {
-      id: `item-${Date.now()}`,
+  const convertItemsToBlocks = (items: CustomSectionItem[]): ContentBlock[] => {
+    return items.map(item => ({
+      id: item.id,
+      type: "text" as const,
+      titleFr: "",
+      titleAr: "",
+      contentFr: item.contentFr,
+      contentAr: item.contentAr,
+      image: item.image,
+    }));
+  };
+
+  const convertBlocksToItems = (blocks: ContentBlock[]): CustomSectionItem[] => {
+    return blocks.map(block => ({
+      id: block.id,
+      contentFr: block.contentFr,
+      contentAr: block.contentAr,
+      image: block.image,
+    }));
+  };
+
+  const handleEditSection = (section: CustomSection) => {
+    const blocks = convertItemsToBlocks(section.items);
+    setEditingSection({ ...section, items: section.items });
+    setSelectedBlock(null);
+  };
+
+  const handleAddBlock = (type: ContentBlock["type"]) => {
+    const newBlock: ContentBlock = {
+      id: `block-${Date.now()}`,
+      type,
+      titleFr: "",
+      titleAr: "",
       contentFr: "",
       contentAr: "",
     };
-    setEditingSection({ ...editingSection, items: [...editingSection.items, newItem] });
+
+    if (editingSection) {
+      const currentBlocks = editingSection.items.length > 0 
+        ? convertItemsToBlocks(editingSection.items)
+        : [];
+      const newBlocks = [...currentBlocks, newBlock];
+      setEditingSection({
+        ...editingSection,
+        items: convertBlocksToItems(newBlocks),
+      });
+    }
+    setSelectedBlock(newBlock);
   };
 
-  const handleUpdateItem = (itemId: string, field: keyof CustomSectionItem, value: string) => {
+  const handleUpdateBlock = (blockId: string, updates: Partial<ContentBlock>) => {
     if (!editingSection) return;
-    const newItems = editingSection.items.map(item =>
-      item.id === itemId ? { ...item, [field]: value } : item
-    );
-    setEditingSection({ ...editingSection, items: newItems });
-  };
-
-  const handleDeleteItem = (itemId: string) => {
-    if (!editingSection) return;
+    const currentBlocks = convertItemsToBlocks(editingSection.items);
+    const newBlocks = currentBlocks.map(b => b.id === blockId ? { ...b, ...updates } : b);
     setEditingSection({
       ...editingSection,
-      items: editingSection.items.filter(item => item.id !== itemId),
+      items: convertBlocksToItems(newBlocks),
+    });
+    setSelectedBlock(prev => prev ? { ...prev, ...updates } : null);
+  };
+
+  const handleDeleteBlock = (blockId: string) => {
+    if (!editingSection) return;
+    const currentBlocks = convertItemsToBlocks(editingSection.items).filter(b => b.id !== blockId);
+    setEditingSection({
+      ...editingSection,
+      items: convertBlocksToItems(currentBlocks),
+    });
+    setSelectedBlock(null);
+  };
+
+  const handleMoveBlock = (blockId: string, direction: "up" | "down") => {
+    if (!editingSection) return;
+    const currentBlocks = convertItemsToBlocks(editingSection.items);
+    const idx = currentBlocks.findIndex(b => b.id === blockId);
+    if (direction === "up" && idx > 0) {
+      [currentBlocks[idx - 1], currentBlocks[idx]] = [currentBlocks[idx], currentBlocks[idx - 1]];
+    } else if (direction === "down" && idx < currentBlocks.length - 1) {
+      [currentBlocks[idx], currentBlocks[idx + 1]] = [currentBlocks[idx + 1], currentBlocks[idx]];
+    }
+    setEditingSection({
+      ...editingSection,
+      items: convertBlocksToItems(currentBlocks),
     });
   };
 
-  const handleUpdateSection = (field: keyof CustomSection, value: any) => {
-    if (!editingSection) return;
-    setEditingSection({ ...editingSection, [field]: value });
-  };
+  const currentBlocks = editingSection ? convertItemsToBlocks(editingSection.items) : [];
 
+  // Edit Section View
   if (editingSection) {
+    const gridCols = {
+      1: "grid-cols-1",
+      2: "grid-cols-1 md:grid-cols-2",
+      3: "grid-cols-1 md:grid-cols-3",
+      4: "grid-cols-1 md:grid-cols-2 lg:grid-cols-4",
+    }[editingSection.columns];
+
     return (
       <div className="space-y-6">
         {notification && (
@@ -113,122 +200,186 @@ export default function AdminCustomSections() {
           </div>
         )}
 
+        {/* Section Settings */}
         <div className="bg-white p-6 rounded-xl border border-gray-200">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-bold text-xl">Modifier la Section</h3>
-            <button onClick={() => setEditingSection(null)} className="text-gray-500 hover:text-black">
+            <button onClick={() => { setEditingSection(null); setSelectedBlock(null); }} className="text-gray-500 hover:text-black">
               <X size={24} />
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
-              <label className="block text-sm font-semibold mb-1 text-green">Titre (Français)</label>
-              <input
-                type="text"
-                className="w-full p-2 border rounded"
-                value={editingSection.titleFr}
-                onChange={(e) => handleUpdateSection("titleFr", e.target.value)}
-                placeholder="Titre de la section"
-              />
+              <label className="block text-sm font-semibold mb-1">Titre (Français)</label>
+              <input type="text" className="w-full p-2 border rounded" value={editingSection.titleFr} onChange={(e) => setEditingSection({ ...editingSection, titleFr: e.target.value })} placeholder="Ex: Nos Services" />
             </div>
             <div>
-              <label className="block text-sm font-semibold mb-1 text-green">العنوان (عربي)</label>
-              <input
-                type="text"
-                className="w-full p-2 border rounded"
-                value={editingSection.titleAr}
-                onChange={(e) => handleUpdateSection("titleAr", e.target.value)}
-                placeholder="عنوان القسم"
-                dir="rtl"
-              />
+              <label className="block text-sm font-semibold mb-1">العنوان (عربي)</label>
+              <input type="text" className="w-full p-2 border rounded" value={editingSection.titleAr} onChange={(e) => setEditingSection({ ...editingSection, titleAr: e.target.value })} placeholder="مثال: خدماتنا" dir="rtl" />
             </div>
-
             <div>
-              <label className="block text-sm font-semibold mb-1">Nombre de colonnes</label>
-              <select
-                className="w-full p-2 border rounded"
-                value={editingSection.columns}
-                onChange={(e) => handleUpdateSection("columns", Number(e.target.value) as 1 | 2 | 3 | 4)}
-              >
-                {columnOptions.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
+              <label className="block text-sm font-semibold mb-1">Colonnes</label>
+              <select className="w-full p-2 border rounded" value={editingSection.columns} onChange={(e) => setEditingSection({ ...editingSection, columns: Number(e.target.value) as 1 | 2 | 3 | 4 })}>
+                {columnOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
               </select>
             </div>
-
             <div>
               <label className="block text-sm font-semibold mb-1">Couleur de fond</label>
-              <select
-                className="w-full p-2 border rounded"
-                value={editingSection.background}
-                onChange={(e) => handleUpdateSection("background", e.target.value)}
-              >
+              <div className="flex flex-wrap gap-2">
                 {backgroundOptions.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  <button
+                    key={opt.value}
+                    onClick={() => setEditingSection({ ...editingSection, background: opt.value as any })}
+                    className={`w-10 h-10 rounded-lg ${opt.preview} border-2 ${editingSection.background === opt.value ? 'border-green ring-2 ring-green/30' : 'border-gray-200'}`}
+                    title={opt.label}
+                  />
                 ))}
-              </select>
+              </div>
             </div>
           </div>
+        </div>
 
-          <div className="mt-6">
-            <div className="flex justify-between items-center mb-4">
-              <h4 className="font-semibold">Éléments de la section ({editingSection.items.length})</h4>
-              <button onClick={handleAddItem} className="btn-secondary py-2 px-4 text-sm flex items-center gap-2">
-                <Plus size={16} /> Ajouter un élément
+        {/* Add Block Buttons */}
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
+          <h4 className="font-semibold mb-4">Ajouter un élément</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {contentTypes.map(({ type, label, icon: Icon, description }) => (
+              <button
+                key={type}
+                onClick={() => handleAddBlock(type)}
+                className="p-4 rounded-xl border-2 border-gray-200 hover:border-green hover:bg-green/5 transition-all text-center group"
+              >
+                <Icon size={24} className="mx-auto mb-2 text-gray-400 group-hover:text-green" />
+                <span className="font-semibold text-sm">{label}</span>
+                <p className="text-xs text-gray-400 mt-1">{description}</p>
               </button>
-            </div>
+            ))}
+          </div>
+        </div>
 
-            <div className={`grid ${columnOptions.find(c => c.value === editingSection.columns)?.grid} gap-4`}>
-              {editingSection.items.map((item, idx) => (
-                <div key={item.id} className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                  <div className="flex justify-between mb-3">
-                    <span className="text-sm font-semibold text-gray-500">Élément {idx + 1}</span>
-                    <button onClick={() => handleDeleteItem(item.id)} className="text-red-500 hover:bg-red-50 p-1 rounded">
+        {/* Blocks List */}
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="font-semibold">Éléments ({currentBlocks.length})</h4>
+            <span className="text-sm text-gray-500">Colonnes: {editingSection.columns}</span>
+          </div>
+
+          {currentBlocks.length === 0 ? (
+            <div className="text-center py-12 text-gray-400">
+              <p>Aucun élément. Cliquez sur "Ajouter un élément" pour commencer.</p>
+            </div>
+          ) : (
+            <div className={`grid ${gridCols} gap-4`}>
+              {currentBlocks.map((block, idx) => (
+                <div key={block.id} className={`relative p-4 rounded-xl border-2 transition-all ${
+                  selectedBlock?.id === block.id ? 'border-green bg-green/5' : 'border-gray-200 hover:border-green/50'
+                }`}>
+                  <div className="absolute -top-3 left-3 bg-white px-2 text-xs font-semibold text-gray-400">
+                    #{idx + 1} {block.type}
+                  </div>
+                  <div className="flex justify-end gap-1 mb-2">
+                    <button onClick={() => handleMoveBlock(block.id, "up")} disabled={idx === 0} className="p-1 text-gray-400 hover:text-green disabled:opacity-30">
+                      <ChevronUp size={16} />
+                    </button>
+                    <button onClick={() => handleMoveBlock(block.id, "down")} disabled={idx === currentBlocks.length - 1} className="p-1 text-gray-400 hover:text-green disabled:opacity-30">
+                      <ChevronDown size={16} />
+                    </button>
+                    <button onClick={() => setSelectedBlock(block)} className="p-1 text-blue-400 hover:text-blue-600">
+                      <Edit2 size={16} />
+                    </button>
+                    <button onClick={() => handleDeleteBlock(block.id)} className="p-1 text-red-400 hover:text-red-600">
                       <Trash2 size={16} />
                     </button>
                   </div>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-semibold mb-1">Français</label>
-                      <textarea
-                        className="w-full p-2 border rounded h-20"
-                        value={item.contentFr}
-                        onChange={(e) => handleUpdateItem(item.id, "contentFr", e.target.value)}
-                        placeholder="Contenu en français..."
-                      />
+                  {block.type === "text" && (
+                    <div className="space-y-2">
+                      <p className="font-semibold text-sm">{block.titleFr || "Titre du texte"}</p>
+                      <p className="text-xs text-gray-500 line-clamp-2">{block.contentFr || "Contenu..."}</p>
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold mb-1">عربي</label>
-                      <textarea
-                        className="w-full p-2 border rounded h-20"
-                        value={item.contentAr}
-                        onChange={(e) => handleUpdateItem(item.id, "contentAr", e.target.value)}
-                        placeholder="المحتوى بالعربية..."
-                        dir="rtl"
-                      />
+                  )}
+                  {block.type === "card" && (
+                    <div className="text-center">
+                      <div className="w-12 h-12 bg-green/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <Type size={20} className="text-green" />
+                      </div>
+                      <p className="font-semibold text-sm">{block.titleFr || "Titre de la carte"}</p>
+                      <p className="text-xs text-gray-500">{block.contentFr || "Description..."}</p>
                     </div>
-                  </div>
+                  )}
+                  {block.type === "image" && (
+                    <div>
+                      {block.image ? (
+                        <img src={block.image} alt="" className="w-full h-24 object-cover rounded-lg mb-2" />
+                      ) : (
+                        <div className="w-full h-24 bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
+                          <ImageIcon size={20} className="text-gray-300" />
+                        </div>
+                      )}
+                      <p className="text-xs text-gray-500 line-clamp-2">{block.contentFr || "Légende de l'image..."}</p>
+                    </div>
+                  )}
+                  {block.type === "stat" && (
+                    <div className="text-center">
+                      <span className="text-2xl font-bold text-caramel">{block.number || "0"}</span>
+                      <p className="font-semibold text-sm mt-1">{block.titleFr || "Titre statistic"}</p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
+          )}
+        </div>
 
-            {editingSection.items.length === 0 && (
-              <p className="text-gray-400 text-center py-8">Aucun élément. Cliquez sur "Ajouter un élément" pour commencer.</p>
-            )}
+        {/* Edit Block Panel */}
+        {selectedBlock && (
+          <div className="bg-cream p-6 rounded-xl border border-gray-200">
+            <h4 className="font-bold mb-4">Modifier l&apos;élément - {selectedBlock.type}</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold mb-1">Titre (FR)</label>
+                <input type="text" className="w-full p-2 border rounded" value={selectedBlock.titleFr} onChange={(e) => handleUpdateBlock(selectedBlock.id, { titleFr: e.target.value })} placeholder="Titre" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1">العنوان (AR)</label>
+                <input type="text" className="w-full p-2 border rounded" value={selectedBlock.titleAr} onChange={(e) => handleUpdateBlock(selectedBlock.id, { titleAr: e.target.value })} placeholder="العنوان" dir="rtl" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold mb-1">Contenu (FR)</label>
+                <textarea className="w-full p-2 border rounded h-24" value={selectedBlock.contentFr} onChange={(e) => handleUpdateBlock(selectedBlock.id, { contentFr: e.target.value })} placeholder="Contenu en français..." />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold mb-1">المحتوى (AR)</label>
+                <textarea className="w-full p-2 border rounded h-24" value={selectedBlock.contentAr} onChange={(e) => handleUpdateBlock(selectedBlock.id, { contentAr: e.target.value })} placeholder="المحتوى بالعربية..." dir="rtl" />
+              </div>
+              {selectedBlock.type === "stat" && (
+                <div>
+                  <label className="block text-sm font-semibold mb-1">Chiffre (ex: 100+)</label>
+                  <input type="text" className="w-full p-2 border rounded" value={selectedBlock.number || ""} onChange={(e) => handleUpdateBlock(selectedBlock.id, { number: e.target.value })} placeholder="100+" />
+                </div>
+              )}
+              {selectedBlock.type === "image" && (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold mb-1">URL de l&apos;image</label>
+                  <input type="text" className="w-full p-2 border rounded" value={selectedBlock.image || ""} onChange={(e) => handleUpdateBlock(selectedBlock.id, { image: e.target.value })} placeholder="https://..." />
+                </div>
+              )}
+            </div>
+            <button onClick={() => setSelectedBlock(null)} className="btn-secondary py-2 px-4 mt-4">Fermer</button>
           </div>
+        )}
 
-          <div className="mt-6 flex justify-end gap-3">
-            <button onClick={() => setEditingSection(null)} className="btn-secondary py-2 px-4">Annuler</button>
-            <button onClick={handleSave} className="btn-primary py-2 px-4 flex items-center gap-2">
-              <Save size={18} /> Sauvegarder
-            </button>
-          </div>
+        <div className="flex gap-4">
+          <button onClick={() => { setEditingSection(null); setSelectedBlock(null); }} className="btn-secondary py-2 px-6">Annuler</button>
+          <button onClick={handleSave} className="btn-primary py-2 px-6 flex items-center gap-2">
+            <Save size={18} /> Sauvegarder
+          </button>
         </div>
       </div>
     );
   }
 
+  // Main List View
   return (
     <div className="space-y-6">
       {notification && (
@@ -240,7 +391,7 @@ export default function AdminCustomSections() {
       <div className="flex justify-between items-center">
         <div>
           <h3 className="font-bold text-lg">Sections Personnalisées ({sections.length})</h3>
-          <p className="text-gray-500 text-sm">Créez vos propres sections avec le nombre de colonnes souhaité</p>
+          <p className="text-gray-500 text-sm">Créez des sections avec texte, cartes, images et statistiques</p>
         </div>
         <button onClick={handleAdd} className="btn-primary py-2 px-4 shadow-sm flex items-center gap-2 text-sm">
           <Plus size={16} /> Nouvelle Section
@@ -253,7 +404,7 @@ export default function AdminCustomSections() {
             <Plus size={24} className="text-gray-400" />
           </div>
           <h4 className="font-semibold text-lg mb-2">Aucune section personnalisée</h4>
-          <p className="text-gray-500 mb-4">Créez vos propres sections avec le nombre de colonnes, texte et ordre souhaités.</p>
+          <p className="text-gray-500 mb-4">Créez des sections avec le contenu de votre choix : texte, cartes, images, statistiques...</p>
           <button onClick={handleAdd} className="btn-primary py-2 px-6 inline-flex items-center gap-2">
             <Plus size={18} /> Créer une section
           </button>
@@ -262,46 +413,27 @@ export default function AdminCustomSections() {
         <div className="space-y-4">
           {sections.map((section, idx) => (
             <div key={section.id} className="bg-white p-4 rounded-xl border border-gray-200 flex items-center gap-4">
-              <div className="text-gray-400 cursor-grab">
-                <GripVertical size={20} />
-              </div>
               <div className="flex gap-1">
-                <button
-                  onClick={() => handleMove(section.id, "up")}
-                  disabled={idx === 0}
-                  className="p-1 text-gray-500 hover:text-green disabled:opacity-30"
-                >
+                <button onClick={() => handleMoveSection(section.id, "up")} disabled={idx === 0} className="p-1 text-gray-400 hover:text-green disabled:opacity-30">
                   <ChevronUp size={18} />
                 </button>
-                <button
-                  onClick={() => handleMove(section.id, "down")}
-                  disabled={idx === sections.length - 1}
-                  className="p-1 text-gray-500 hover:text-green disabled:opacity-30"
-                >
+                <button onClick={() => handleMoveSection(section.id, "down")} disabled={idx === sections.length - 1} className="p-1 text-gray-400 hover:text-green disabled:opacity-30">
                   <ChevronDown size={18} />
                 </button>
               </div>
               <div className="flex-1">
                 <h4 className="font-bold">{section.titleFr || "Sans titre"}</h4>
                 <p className="text-sm text-gray-500">
-                  {columnOptions.find(c => c.value === section.columns)?.label} • 
-                  {backgroundOptions.find(b => b.value === section.background)?.label} • 
-                  {section.items.length} élément(s)
+                  {columnOptions.find(c => c.value === section.columns)?.label} • {backgroundOptions.find(b => b.value === section.background)?.label} • {section.items.length} éléments
                 </p>
               </div>
               <span className={`px-3 py-1 rounded-full text-xs font-semibold ${section.enabled ? "bg-green/10 text-green" : "bg-gray-100 text-gray-500"}`}>
                 {section.enabled ? "Actif" : "Inactif"}
               </span>
-              <button
-                onClick={() => setEditingSection(section)}
-                className="p-2 text-blue-500 hover:bg-blue-50 rounded"
-              >
+              <button onClick={() => handleEditSection(section)} className="p-2 text-blue-500 hover:bg-blue-50 rounded">
                 <Edit2 size={18} />
               </button>
-              <button
-                onClick={() => handleDelete(section.id)}
-                className="p-2 text-red-500 hover:bg-red-50 rounded"
-              >
+              <button onClick={() => handleDelete(section.id)} className="p-2 text-red-500 hover:bg-red-50 rounded">
                 <Trash2 size={18} />
               </button>
             </div>
