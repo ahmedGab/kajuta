@@ -9,7 +9,8 @@ import AdminProductEditor from "./AdminProductEditor";
 import AdminFAQEditor from "./AdminFAQEditor";
 import AdminTestimonialEditor from "./AdminTestimonialEditor";
 import AdminImageEditor from "./AdminImageEditor";
-import { LayoutDashboard, LogOut, FileText, Package, Image as ImageIcon, MessageSquare, HelpCircle, Eye, RefreshCw } from "lucide-react";
+import AdminPacksEditor from "./AdminPacksEditor";
+import { LayoutDashboard, LogOut, FileText, Package, Image as ImageIcon, MessageSquare, HelpCircle, Eye, RefreshCw, Gift } from "lucide-react";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -41,6 +42,7 @@ export default function AdminDashboard() {
   const tabs = [
     { id: "paragraphes", name: "Paragraphes", icon: <FileText size={18} /> },
     { id: "produits", name: "Produits", icon: <Package size={18} /> },
+    { id: "packs", name: "Packs", icon: <Gift size={18} /> },
     { id: "images", name: "Images", icon: <ImageIcon size={18} /> },
     { id: "avis", name: "Avis Clients", icon: <MessageSquare size={18} /> },
     { id: "faq", name: "FAQ", icon: <HelpCircle size={18} /> },
@@ -104,6 +106,7 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8">
             {activeTab === "paragraphes" && <AdminParagraphEditor />}
             {activeTab === "produits" && <AdminProductEditor />}
+            {activeTab === "packs" && <AdminPacksEditor />}
             {activeTab === "images" && <AdminImageEditor />}
             {activeTab === "avis" && <AdminTestimonialEditor />}
             {activeTab === "faq" && <AdminFAQEditor />}

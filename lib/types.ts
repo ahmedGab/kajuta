@@ -43,8 +43,18 @@ export type FAQItem = {
 
 export type Pack = {
   id: string;
-  name: string;
-  description: string;
+  name: LocalizedString;
+  description: LocalizedString;
+  price: number;
+  products: string[];
+};
+
+export type BilingualPack = {
+  id: string;
+  nameFr: string;
+  nameAr: string;
+  descriptionFr: string;
+  descriptionAr: string;
   price: number;
   products: string[];
 };
@@ -55,7 +65,7 @@ export type Occasion = {
   description: string;
 };
 
-export type SectionKey = "story" | "delivery" | "occasions" | "about";
+export type SectionKey = "story" | "delivery" | "occasions" | "about" | "packs" | "footer";
 
 export type SiteContent = {
   logo?: string;
@@ -88,7 +98,11 @@ export type SiteContent = {
   };
   packs: {
     title: LocalizedString;
-    items: Pack[];
+    paragraphs: LocalizedParagraphs;
+    items: BilingualPack[];
+  };
+  footer: {
+    paragraphs: LocalizedParagraphs;
   };
   finalCta: {
     title: LocalizedString;

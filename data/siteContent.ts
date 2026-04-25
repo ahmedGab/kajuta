@@ -115,36 +115,60 @@ export const defaultSiteContent: SiteContent = {
       fr: "Nos Packs & Offres",
       ar: "عروضنا والحزم"
     },
+    paragraphs: {
+      fr: ["Nos packs sont parfaits pour offrir ou se faire plaisir. Chaque coffret est préparé avec soin."],
+      ar: ["حزمتنا مثالية للهدايا او للاستمتاع. كل صندوق محضر بعناية."]
+    },
     items: [
       {
         id: "pack-decouverte",
-        name: "Pack Découverte",
-        description: "Idéal pour goûter : 4 sachets de 100g (Amandes, Cajou, Noisette, Pistache).",
+        nameFr: "Pack Découverte",
+        nameAr: "حزمة الاكتشاف",
+        descriptionFr: "Idéal pour goûter : 4 sachets de 100g (Amandes, Cajou, Noisette, Pistache).",
+        descriptionAr: "مثالي للتذوق: 4 أكياس من 100 غ (لوز، كاجو، بندق، فستق).",
         price: 85,
         products: []
       },
       {
         id: "pack-famille",
-        name: "Pack Famille",
-        description: "Pour toute la famille : 1kg de Mix Cajuta + 500g d'Amandes au choix.",
+        nameFr: "Pack Famille",
+        nameAr: "حزمة العائلة",
+        descriptionFr: "Pour toute la famille : 1kg de Mix Cajuta + 500g d'Amandes au choix.",
+        descriptionAr: "للعائلة: 1 كغ من ميكس كاجوتا + 500 غ لوز اختياري.",
         price: 155,
         products: []
       },
       {
         id: "pack-cadeau",
-        name: "Pack Cadeau VIP",
-        description: "Dans un coffret luxueux : Assortiment de nos 4 best-sellers.",
+        nameFr: "Pack Cadeau VIP",
+        nameAr: "حزمة الهدية VIP",
+        descriptionFr: "Dans un coffret luxueux : Assortiment de nos 4 best-sellers.",
+        descriptionAr: "في صندوق فاخر: تشكيلة من أفضل 4 منتجات.",
         price: 120,
         products: []
       },
       {
         id: "pack-evenement",
-        name: "Pack Événement",
-        description: "Pour vos cérémonies : Sur devis, personnalisation disponible.",
+        nameFr: "Pack Événement",
+        nameAr: "حزمة المناسبة",
+        descriptionFr: "Pour vos cérémonies : Sur devis, personnalisation disponible.",
+        descriptionAr: "للمناسبات: حسب الطلب، إمكانية التخصيص.",
         price: 0,
         products: []
       }
     ]
+  },
+  footer: {
+    paragraphs: {
+      fr: [
+        "© 2024 Cajuta. Tous droits réservés.",
+        "Fruits secs caramélisés artisanaux fabriqués en Tunisie avec passion."
+      ],
+      ar: [
+        "© 2024 كاجوتا. جميع الحقوق محفوظة.",
+        "فواكة جافة مكرملة حرفية مصنوعة في تونس بالشغف."
+      ]
+    }
   },
   finalCta: {
     title: {

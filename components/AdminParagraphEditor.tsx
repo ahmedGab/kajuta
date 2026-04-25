@@ -21,6 +21,8 @@ export default function AdminParagraphEditor() {
     { id: "delivery", name: "Livraison" },
     { id: "occasions", name: "Occasions" },
     { id: "about", name: "À propos" },
+    { id: "packs", name: "Packs (intro)" },
+    { id: "footer", name: "Footer" },
   ];
 
   const currentParagraphs = content[selectedSection].paragraphs[selectedLanguage];

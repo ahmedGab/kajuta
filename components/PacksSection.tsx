@@ -25,11 +25,16 @@ export default function PacksSection() {
             {language === "ar" ? "لإهدا أو للمشاركة" : "Pour Offrir ou Partager"}
           </span>
           <h2 
-            className="text-3xl md:text-5xl font-display font-bold text-chocolate"
+            className="text-3xl md:text-5xl font-display font-bold text-chocolate mb-6"
             style={{ direction: isRTL ? "rtl" : "ltr" }}
           >
             {content.title[language]}
           </h2>
+          {content.paragraphs[language].map((para, idx) => (
+            <p key={idx} className="text-chocolate/70 text-lg max-w-2xl mx-auto" style={{ direction: isRTL ? "rtl" : "ltr" }}>
+              {para}
+            </p>
+          ))}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 xl:gap-8">
@@ -39,8 +44,12 @@ export default function PacksSection() {
                 <ShoppingBag size={28} />
               </div>
               
-              <h3 className="font-display font-bold text-xl text-chocolate mb-4">{pack.name}</h3>
-              <p className="text-chocolate/70 text-sm mb-8 flex-grow" style={{ direction: isRTL ? "rtl" : "ltr" }}>{pack.description}</p>
+              <h3 className="font-display font-bold text-xl text-chocolate mb-4">
+                {language === "ar" ? pack.nameAr : pack.nameFr}
+              </h3>
+              <p className="text-chocolate/70 text-sm mb-8 flex-grow" style={{ direction: isRTL ? "rtl" : "ltr" }}>
+                {language === "ar" ? pack.descriptionAr : pack.descriptionFr}
+              </p>
               
               <div className="mb-6">
                 {pack.price > 0 ? (
@@ -55,7 +64,7 @@ export default function PacksSection() {
               </div>
               
               <a
-                href={`https://wa.me/21650123456?text=${encodeURIComponent(language === "ar" ? `مرحبا، أريد طلب ${pack.name}` : `Bonjour Cajuta, je voudrais commander le ${pack.name}`)}`}
+                href={`https://wa.me/21650123456?text=${encodeURIComponent(language === "ar" ? `مرحبا، أريد طلب ${pack.nameAr}` : `Bonjour Cajuta, je voudrais commander le ${pack.nameFr}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full btn-secondary py-2 px-4 text-sm bg-white"
