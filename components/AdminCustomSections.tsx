@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 import { getSiteContent, saveSiteContent } from "@/lib/storage";
-import { CustomSection, CustomSectionItem, Language } from "@/lib/types";
-import { Plus, Trash2, Save, X, Edit2, Image as ImageIcon, Type, AlignLeft, GripVertical, ChevronUp, ChevronDown } from "lucide-react";
+import { CustomSection, CustomSectionItem } from "@/lib/types";
+import { Plus, Trash2, Save, X, Edit2, Image as ImageIcon, Type, AlignLeft, ChevronUp, ChevronDown, Upload } from "lucide-react";
 
 const contentTypes = [
   { type: "text", label: "Texte", icon: Type, description: "Titre + paragraphe" },
@@ -40,6 +40,40 @@ type ContentBlock = {
   number?: string;
 };
 
+const uploadFileWithProgress = (file: File, onProgress: (percent: number) => void): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/upload");
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percent = Math.round((event.loaded / event.total) * 100);
+        onProgress(percent);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (data.success) resolve(data.url);
+          else reject(new Error(data.error));
+        } catch (e) {
+          reject(new Error("Invalid response"));
+        }
+      } else {
+        reject(new Error("Server error"));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Network error"));
+
+    const formData = new FormData();
+    formData.append("file", file);
+    xhr.send(formData);
+  });
+};
+
 export default function AdminCustomSections() {
   const content = getSiteContent();
   const [sections, setSections] = useState<CustomSection[]>(content.customSections || []);
@@ -47,6 +81,8 @@ export default function AdminCustomSections() {
   const [notification, setNotification] = useState("");
   const [selectedBlock, setSelectedBlock] = useState<ContentBlock | null>(null);
   const [editingBlocks, setEditingBlocks] = useState<ContentBlock[]>([]);
+  const [uploadingBlockId, setUploadingBlockId] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const showNotification = (msg: string) => {
     setNotification(msg);
@@ -364,8 +400,47 @@ export default function AdminCustomSections() {
               )}
               {selectedBlock.type === "image" && (
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold mb-1">URL de l&apos;image</label>
-                  <input type="text" className="w-full p-2 border rounded" value={selectedBlock.image || ""} onChange={(e) => handleUpdateBlock(selectedBlock.id, { image: e.target.value })} placeholder="https://..." />
+                  <label className="block text-sm font-semibold mb-1">Image</label>
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <input type="text" className="w-full p-2 border rounded mb-2" value={selectedBlock.image || ""} onChange={(e) => handleUpdateBlock(selectedBlock.id, { image: e.target.value })} placeholder="https://..." />
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500">OU</span>
+                        <label className="flex items-center gap-2 px-4 py-2 bg-green/10 text-green rounded-lg cursor-pointer hover:bg-green/20 text-sm font-semibold">
+                          <Upload size={16} />
+                          <span>Uploader une image</span>
+                          <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file || !selectedBlock) return;
+                            setUploadingBlockId(selectedBlock.id);
+                            setUploadProgress(0);
+                            try {
+                              const url = await uploadFileWithProgress(file, setUploadProgress);
+                              handleUpdateBlock(selectedBlock.id, { image: url });
+                            } catch (err) {
+                              alert("Erreur lors de l'upload: " + (err as Error).message);
+                            } finally {
+                              setUploadingBlockId(null);
+                              setUploadProgress(0);
+                            }
+                          }} />
+                        </label>
+                      </div>
+                      {uploadingBlockId === selectedBlock.id && (
+                        <div className="mt-2">
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div className="bg-green h-2 rounded-full transition-all" style={{ width: `${uploadProgress}%` }}></div>
+                          </div>
+                          <p className="text-xs text-green font-semibold mt-1">{uploadProgress}%</p>
+                        </div>
+                      )}
+                    </div>
+                    {selectedBlock.image && (
+                      <div className="w-24 h-24 rounded-lg overflow-hidden border border-gray-200">
+                        <img src={selectedBlock.image} alt="Preview" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

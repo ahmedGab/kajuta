@@ -3,7 +3,7 @@
 import React, { useState, useRef } from "react";
 import { getSiteContent, saveSiteContent } from "@/lib/storage";
 import { SectionVisibility } from "@/lib/types";
-import { Save, Eye, EyeOff, ChevronUp, ChevronDown, GripVertical, Layers, Grip } from "lucide-react";
+import { Save, Eye, EyeOff, ChevronUp, ChevronDown, GripVertical, Layers, Grip, EyeOff as DisableIcon } from "lucide-react";
 
 const sectionsList = [
   { key: "hero" as const, label: "Hero (Bannière principale)", description: "La section d'accueil avec image et boutons" },
@@ -20,8 +20,9 @@ const sectionsList = [
 ];
 
 type SectionOrderItem = {
-  key: keyof SectionVisibility | "custom";
+  key: string;
   label: string;
+  customId?: string;
 };
 
 export default function AdminSectionVisibility() {
@@ -41,13 +42,23 @@ export default function AdminSectionVisibility() {
     cta: true,
   });
 
+  const customSections = content.customSections || [];
+  const enabledCustomCount = customSections.filter(s => s.enabled).length;
+  const disabledCustomCount = customSections.filter(s => !s.enabled).length;
+
   const [sectionOrder, setSectionOrder] = useState<SectionOrderItem[]>(() => {
-    const stored = content.sectionOrder;
-    if (stored && stored.length === sectionsList.length + 1) {
-      return stored as SectionOrderItem[];
+    const stored = content.sectionOrder as SectionOrderItem[] | undefined;
+    if (stored && stored.length > 0) {
+      return stored;
     }
     const base = sectionsList.map(s => ({ key: s.key, label: s.label }));
-    return [...base, { key: "custom" as const, label: "Sections Personnalisées" }];
+    return [...base, { key: "custom", label: "Sections Personnalisées" }];
+  });
+
+  const [customEnabled, setCustomEnabled] = useState<Record<string, boolean>>(() => {
+    const map: Record<string, boolean> = {};
+    customSections.forEach(s => { map[s.id] = s.enabled; });
+    return map;
   });
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -56,9 +67,19 @@ export default function AdminSectionVisibility() {
   const dragOverItem = useRef<number | null>(null);
 
   const customSectionsCount = (content.customSections || []).filter(s => s.enabled).length;
+  const totalCustomCount = customSections.length;
 
   const handleToggle = (key: keyof SectionVisibility) => {
     setVisibility(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleToggleCustomSection = (sectionId: string) => {
+    setCustomEnabled(prev => ({ ...prev, [sectionId]: !prev[sectionId] }));
+    const updatedSections = customSections.map(s => 
+      s.id === sectionId ? { ...s, enabled: !s.enabled } : s
+    );
+    const newContent = { ...content, customSections: updatedSections };
+    saveSiteContent(newContent);
   };
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
@@ -198,14 +219,7 @@ export default function AdminSectionVisibility() {
                 </div>
                 <span className="text-gray-400 font-mono text-sm w-6 text-center bg-gray-100 py-1 rounded">{idx + 1}</span>
                 <span className={`flex-1 font-semibold text-sm ${isVisible ? "text-chocolate" : "text-gray-400"}`}>
-                  {isCustom ? (
-                    <span className="flex items-center gap-2">
-                      <Layers size={16} className="text-caramel" />
-                      Sections Personnalisées ({customSectionsCount})
-                    </span>
-                  ) : (
-                    section.label
-                  )}
+                  {section.label}
                 </span>
                 <div className="flex gap-1">
                   <button
@@ -245,6 +259,38 @@ export default function AdminSectionVisibility() {
           Glissez les sections pour les réorganiser
         </p>
       </div>
+
+      {/* Sections Personnalisées */}
+      {customSections.length > 0 && (
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
+          <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+            <Layers size={20} className="text-caramel" />
+            Sections Personnalisées ({enabledCustomCount}/{totalCustomCount})
+          </h3>
+          <div className="space-y-2">
+            {customSections.map((section) => {
+              const isEnabled = customEnabled[section.id] ?? section.enabled;
+              return (
+                <div key={section.id} className={`flex items-center gap-3 p-3 rounded-xl border-2 ${
+                  isEnabled ? "border-green/30 bg-green/5" : "border-gray-200 bg-gray-50 opacity-60"
+                }`}>
+                  <span className="flex-1 font-medium text-sm">{section.titleFr || "Sans titre"}</span>
+                  <div 
+                    className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${
+                      isEnabled ? "bg-green" : "bg-gray-300"
+                    }`} 
+                    onClick={() => handleToggleCustomSection(section.id)}
+                  >
+                    <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                      isEnabled ? "left-5" : "left-0.5"
+                    }`}></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <button onClick={handleSave} className="btn-primary py-2 px-6 flex items-center gap-2 w-full justify-center">
         <Save size={18} /> Sauvegarder l&apos;ordre des sections
