@@ -57,9 +57,10 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
-      {/* Sidebar */}
-      <div className="w-full md:w-64 bg-white border-r border-gray-200 flex flex-col sticky top-0 h-screen">
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar Fixed */}
+      <div className="fixed left-0 top-0 w-64 h-screen bg-white border-r border-gray-200 flex flex-col z-50">
+        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
         <div className="p-6 border-b border-gray-100 flex items-center justify-between">
           <span className="font-display font-bold text-xl text-green">
             CAJUTA<span className="text-caramel">.</span> Admin
@@ -101,7 +102,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto w-full p-4 md:p-8 lg:p-12">
+      <div className="flex-1 overflow-y-auto w-full p-4 md:p-8 lg:p-12 ml-64">
         <div className="max-w-5xl mx-auto">
           <header className="mb-8">
             <h1 className="text-3xl font-display font-bold text-chocolate flex items-center gap-3">
