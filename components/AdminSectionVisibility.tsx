@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { getSiteContent, saveSiteContent } from "@/lib/storage";
 import { SectionVisibility } from "@/lib/types";
-import { Save, Eye, EyeOff, ChevronUp, ChevronDown, GripVertical, Layers } from "lucide-react";
+import { Save, Eye, EyeOff, ChevronUp, ChevronDown, GripVertical, Layers, Grip } from "lucide-react";
 
 const sectionsList = [
   { key: "hero" as const, label: "Hero (Bannière principale)", description: "La section d'accueil avec image et boutons" },
@@ -19,7 +19,7 @@ const sectionsList = [
   { key: "cta" as const, label: "CTA Final", description: "Bouton de commande WhatsApp" },
 ];
 
-type SectionOrder = {
+type SectionOrderItem = {
   key: keyof SectionVisibility | "custom";
   label: string;
 };
@@ -41,18 +41,70 @@ export default function AdminSectionVisibility() {
     cta: true,
   });
 
-  const [sectionOrder, setSectionOrder] = useState<SectionOrder[]>(() => {
+  const [sectionOrder, setSectionOrder] = useState<SectionOrderItem[]>(() => {
     const stored = content.sectionOrder;
-    if (stored && stored.length === sectionsList.length) {
-      return stored;
+    if (stored && stored.length === sectionsList.length + 1) {
+      return stored as SectionOrderItem[];
     }
-    return sectionsList.map(s => ({ key: s.key, label: s.label }));
+    const base = sectionsList.map(s => ({ key: s.key, label: s.label }));
+    return [...base, { key: "custom" as const, label: "Sections Personnalisées" }];
   });
+
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
 
   const customSectionsCount = (content.customSections || []).filter(s => s.enabled).length;
 
   const handleToggle = (key: keyof SectionVisibility) => {
     setVisibility(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    dragItem.current = index;
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.opacity = 0.5;
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    dragOverItem.current = index;
+    setDragOverIndex(index);
+  };
+
+  const handleDragEnter = (index: number) => {
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (dragItem.current === null) return;
+    
+    const newOrder = [...sectionOrder];
+    const dragIndex = dragItem.current;
+    
+    const draggedItem = newOrder[dragIndex];
+    newOrder.splice(dragIndex, 1);
+    newOrder.splice(dropIndex, 0, draggedItem);
+    
+    setSectionOrder(newOrder);
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+    dragItem.current = null;
+    dragOverItem.current = null;
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+    dragItem.current = null;
+    dragOverItem.current = null;
   };
 
   const handleMoveSection = (index: number, direction: "up" | "down") => {
@@ -106,59 +158,80 @@ export default function AdminSectionVisibility() {
         </div>
       )}
 
-      {/* Ordre des Sections */}
+      {/* Ordre des Sections avec Drag & Drop */}
       <div className="bg-white p-6 rounded-xl border border-gray-200">
-        <h3 className="font-bold text-lg mb-4">Ordre des Sections</h3>
-        <p className="text-gray-500 text-sm mb-4">Cliquez sur les flèches pour changer l&apos;ordre d&apos;affichage des sections.</p>
+        <h3 className="font-bold text-lg mb-2">Ordre des Sections</h3>
+        <p className="text-gray-500 text-sm mb-4">Glissez et déposez les sections pour changer leur ordre d&apos;affichage.</p>
         
-        <div className="space-y-2">
+        <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 bg-gray-50">
           {sectionOrder.map((section, idx) => {
             const isCustom = section.key === "custom";
             const isVisible = !isCustom && visibility[section.key as keyof SectionVisibility];
+            const isDragging = draggedIndex === idx;
+            const isDragOver = dragOverIndex === idx;
             
             return (
               <div 
                 key={`${section.key}-${idx}`}
-                className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                  isVisible 
-                    ? "border-green/30 bg-green/5" 
-                    : "border-gray-200 bg-gray-50 opacity-60"
+                draggable
+                onDragStart={(e) => handleDragStart(e, idx)}
+                onDragOver={(e) => handleDragOver(e, idx)}
+                onDragEnter={() => handleDragEnter(idx)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, idx)}
+                onDragEnd={handleDragEnd}
+                className={`flex items-center gap-3 p-4 rounded-xl border-2 mb-2 transition-all cursor-grab active:cursor-grabbing ${
+                  isDragging 
+                    ? "border-green bg-green/20 opacity-70 scale-105 shadow-lg" 
+                    : isDragOver 
+                      ? "border-caramel bg-caramel/10 scale-102" 
+                      : isVisible 
+                        ? "border-green/30 bg-white hover:border-green/50 hover:shadow-sm" 
+                        : "border-gray-200 bg-gray-100 opacity-60"
                 }`}
+                style={{
+                  transform: isDragOver && draggedIndex !== idx ? `translateY(${draggedIndex! > idx ? '8px' : '-8px'})` : 'none'
+                }}
               >
-                <span className="text-gray-400 font-mono text-sm w-6 text-center">{idx + 1}</span>
-                <div className="cursor-grab text-gray-400">
-                  <GripVertical size={18} />
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 text-gray-400 hover:bg-gray-200">
+                  <Grip size={18} />
                 </div>
-                <button
-                  onClick={() => handleMoveSection(idx, "up")}
-                  disabled={idx === 0}
-                  className="p-1 text-gray-500 hover:text-green disabled:opacity-30"
-                >
-                  <ChevronUp size={18} />
-                </button>
-                <button
-                  onClick={() => handleMoveSection(idx, "down")}
-                  disabled={idx === sectionOrder.length - 1}
-                  className="p-1 text-gray-500 hover:text-green disabled:opacity-30"
-                >
-                  <ChevronDown size={18} />
-                </button>
-                <span className={`flex-1 font-medium ${isVisible ? "text-chocolate" : "text-gray-400"}`}>
+                <span className="text-gray-400 font-mono text-sm w-6 text-center bg-gray-100 py-1 rounded">{idx + 1}</span>
+                <span className={`flex-1 font-semibold text-sm ${isVisible ? "text-chocolate" : "text-gray-400"}`}>
                   {isCustom ? (
                     <span className="flex items-center gap-2">
-                      <Layers size={16} />
+                      <Layers size={16} className="text-caramel" />
                       Sections Personnalisées ({customSectionsCount})
                     </span>
                   ) : (
                     section.label
                   )}
                 </span>
+                <div className="flex gap-1">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleMoveSection(idx, "up"); }}
+                    disabled={idx === 0}
+                    className="p-1.5 text-gray-400 hover:text-green hover:bg-green/10 rounded disabled:opacity-30"
+                  >
+                    <ChevronUp size={18} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleMoveSection(idx, "down"); }}
+                    disabled={idx === sectionOrder.length - 1}
+                    className="p-1.5 text-gray-400 hover:text-green hover:bg-green/10 rounded disabled:opacity-30"
+                  >
+                    <ChevronDown size={18} />
+                  </button>
+                </div>
                 {!isCustom && (
-                  <div className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${
-                    isVisible ? "bg-green" : "bg-gray-300"
-                  }`} onClick={() => handleToggle(section.key as keyof SectionVisibility)}>
-                    <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-                      isVisible ? "left-5" : "left-0.5"
+                  <div 
+                    className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${
+                      isVisible ? "bg-green" : "bg-gray-300"
+                    }`} 
+                    onClick={(e) => { e.stopPropagation(); handleToggle(section.key as keyof SectionVisibility); }}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                      isVisible ? "left-7" : "left-1"
                     }`}></div>
                   </div>
                 )}
@@ -166,61 +239,15 @@ export default function AdminSectionVisibility() {
             );
           })}
         </div>
+        
+        <p className="text-xs text-gray-400 mt-3 text-center">
+          <Grip size={14} className="inline mr-1" />
+          Glissez les sections pour les réorganiser
+        </p>
       </div>
 
-      {/* Visibilité rapide */}
-      <div className="bg-white p-6 rounded-xl border border-gray-200">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h3 className="font-bold text-lg">Visibilité Rápide</h3>
-            <p className="text-gray-500 text-sm">{visibleCount}/{sectionsList.length} sections actives</p>
-          </div>
-          <button 
-            onClick={handleEnableAll}
-            className="btn-secondary py-2 px-4 text-sm"
-          >
-            Tout activer
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {sectionsList.map(({ key, label, description }) => (
-            <div 
-              key={key}
-              className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                visibility[key] 
-                  ? "border-green bg-green/5" 
-                  : "border-gray-200 bg-gray-50 opacity-60"
-              }`}
-              onClick={() => handleToggle(key)}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-start gap-3">
-                  <div className={`mt-1 p-1.5 rounded-lg ${visibility[key] ? "bg-green text-white" : "bg-gray-300 text-white"}`}>
-                    {visibility[key] ? <Eye size={16} /> : <EyeOff size={16} />}
-                  </div>
-                  <div>
-                    <h4 className={`font-semibold ${visibility[key] ? "text-green" : "text-gray-500"}`}>
-                      {label}
-                    </h4>
-                    <p className="text-xs text-gray-400 mt-1">{description}</p>
-                  </div>
-                </div>
-                <div className={`w-12 h-6 rounded-full transition-colors relative ${
-                  visibility[key] ? "bg-green" : "bg-gray-300"
-                }`}>
-                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                    visibility[key] ? "left-7" : "left-1"
-                  }`}></div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <button onClick={handleSave} className="btn-primary py-2 px-6 flex items-center gap-2">
-        <Save size={18} /> Sauvegarder la configuration
+      <button onClick={handleSave} className="btn-primary py-2 px-6 flex items-center gap-2 w-full justify-center">
+        <Save size={18} /> Sauvegarder l&apos;ordre des sections
       </button>
     </div>
   );
