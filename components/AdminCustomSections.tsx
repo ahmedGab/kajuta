@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { getSiteContent, saveSiteContent } from "@/lib/storage";
 import { CustomSection, CustomSectionItem, ContentBlockType } from "@/lib/types";
 import { Plus, Trash2, Save, X, Edit2, Image as ImageIcon, Type, AlignLeft, ChevronUp, ChevronDown, Upload } from "lucide-react";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -17,7 +17,7 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = initializeApp(firebaseConfig);
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const storage = getStorage(app);
 
 const contentTypes: { type: ContentBlockType; label: string; icon: typeof Type; description: string }[] = [
