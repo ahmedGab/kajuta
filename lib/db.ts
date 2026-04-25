@@ -1,28 +1,24 @@
 "use client";
 
-import { db } from "./firebase";
-import {
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  collection,
-  getDocs,
-  query,
-  orderBy,
-} from "firebase/firestore";
+import { supabase } from "./supabase";
 import { SiteContent, Product, Testimonial, FAQItem } from "./types";
 
-const SITE_CONTENT_ID = "cajuta";
+const SITE_CONTENT_ID = "main";
 
 export async function getSiteContent(): Promise<SiteContent | null> {
   try {
-    const docRef = doc(db, "siteContent", SITE_CONTENT_ID);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return docSnap.data() as SiteContent;
+    const { data, error } = await supabase
+      .from("site_content")
+      .select("data")
+      .eq("id", SITE_CONTENT_ID)
+      .single();
+
+    if (error) {
+      console.error("Error getting site content:", error);
+      return null;
     }
-    return null;
+
+    return data?.data as SiteContent | null;
   } catch (error) {
     console.error("Error getting site content:", error);
     return null;
@@ -31,8 +27,14 @@ export async function getSiteContent(): Promise<SiteContent | null> {
 
 export async function saveSiteContent(content: SiteContent): Promise<boolean> {
   try {
-    const docRef = doc(db, "siteContent", SITE_CONTENT_ID);
-    await setDoc(docRef, content, { merge: true });
+    const { error } = await supabase
+      .from("site_content")
+      .upsert({ id: SITE_CONTENT_ID, data: content }, { onConflict: "id" });
+
+    if (error) {
+      console.error("Error saving site content:", error);
+      return false;
+    }
     return true;
   } catch (error) {
     console.error("Error saving site content:", error);
@@ -42,9 +44,17 @@ export async function saveSiteContent(content: SiteContent): Promise<boolean> {
 
 export async function getProducts(): Promise<Product[]> {
   try {
-    const q = query(collection(db, "products"), orderBy("order", "asc"));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Product));
+    const { data, error } = await supabase
+      .from("products")
+      .select("data")
+      .order("id", { ascending: true });
+
+    if (error) {
+      console.error("Error getting products:", error);
+      return [];
+    }
+
+    return data?.map((item) => item.data as Product) || [];
   } catch (error) {
     console.error("Error getting products:", error);
     return [];
@@ -53,10 +63,16 @@ export async function getProducts(): Promise<Product[]> {
 
 export async function saveProducts(products: Product[]): Promise<boolean> {
   try {
-    for (let i = 0; i < products.length; i++) {
-      const product = products[i];
-      const docRef = doc(db, "products", product.id || `product_${i}`);
-      await setDoc(docRef, { ...product, order: i }, { merge: true });
+    const records = products.map((p) => ({
+      id: p.id || `product_${Date.now()}_${Math.random()}`,
+      data: p,
+    }));
+
+    const { error } = await supabase.from("products").upsert(records, { onConflict: "id" });
+
+    if (error) {
+      console.error("Error saving products:", error);
+      return false;
     }
     return true;
   } catch (error) {
@@ -67,9 +83,17 @@ export async function saveProducts(products: Product[]): Promise<boolean> {
 
 export async function getTestimonials(): Promise<Testimonial[]> {
   try {
-    const q = query(collection(db, "testimonials"), orderBy("order", "asc"));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map((doc) => doc.data() as Testimonial);
+    const { data, error } = await supabase
+      .from("testimonials")
+      .select("data")
+      .order("id", { ascending: true });
+
+    if (error) {
+      console.error("Error getting testimonials:", error);
+      return [];
+    }
+
+    return data?.map((item) => item.data as Testimonial) || [];
   } catch (error) {
     console.error("Error getting testimonials:", error);
     return [];
@@ -78,10 +102,16 @@ export async function getTestimonials(): Promise<Testimonial[]> {
 
 export async function saveTestimonials(testimonials: Testimonial[]): Promise<boolean> {
   try {
-    for (let i = 0; i < testimonials.length; i++) {
-      const testimonial = testimonials[i];
-      const docRef = doc(db, "testimonials", `testimonial_${i}`);
-      await setDoc(docRef, { ...testimonial, order: i }, { merge: true });
+    const records = testimonials.map((t) => ({
+      id: t.id || `testimonial_${Date.now()}_${Math.random()}`,
+      data: t,
+    }));
+
+    const { error } = await supabase.from("testimonials").upsert(records, { onConflict: "id" });
+
+    if (error) {
+      console.error("Error saving testimonials:", error);
+      return false;
     }
     return true;
   } catch (error) {
@@ -92,9 +122,17 @@ export async function saveTestimonials(testimonials: Testimonial[]): Promise<boo
 
 export async function getFAQ(): Promise<FAQItem[]> {
   try {
-    const q = query(collection(db, "faq"), orderBy("order", "asc"));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map((doc) => doc.data() as FAQItem);
+    const { data, error } = await supabase
+      .from("faq")
+      .select("data")
+      .order("id", { ascending: true });
+
+    if (error) {
+      console.error("Error getting FAQ:", error);
+      return [];
+    }
+
+    return data?.map((item) => item.data as FAQItem) || [];
   } catch (error) {
     console.error("Error getting FAQ:", error);
     return [];
@@ -103,10 +141,16 @@ export async function getFAQ(): Promise<FAQItem[]> {
 
 export async function saveFAQ(faq: FAQItem[]): Promise<boolean> {
   try {
-    for (let i = 0; i < faq.length; i++) {
-      const item = faq[i];
-      const docRef = doc(db, "faq", `faq_${i}`);
-      await setDoc(docRef, { ...item, order: i }, { merge: true });
+    const records = faq.map((f) => ({
+      id: f.id || `faq_${Date.now()}_${Math.random()}`,
+      data: f,
+    }));
+
+    const { error } = await supabase.from("faq").upsert(records, { onConflict: "id" });
+
+    if (error) {
+      console.error("Error saving FAQ:", error);
+      return false;
     }
     return true;
   } catch (error) {
