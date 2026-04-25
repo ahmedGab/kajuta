@@ -27,6 +27,9 @@ export default function FAQSection({ language = "fr" }: FAQSectionProps) {
 
   const isRTL = language === "ar";
 
+  const getQuestion = (item: FAQItem) => language === "ar" ? item.questionAr : item.questionFr;
+  const getAnswer = (item: FAQItem) => language === "ar" ? item.answerAr : item.answerFr;
+
   return (
     <section className="section-padding bg-white" id="faq">
       <div className="container-custom max-w-3xl">
@@ -54,7 +57,7 @@ export default function FAQSection({ language = "fr" }: FAQSectionProps) {
                 className={`w-full px-6 py-5 text-left flex items-center justify-between font-semibold text-chocolate bg-white ${isRTL ? 'text-right flex-row-reverse' : ''}`}
                 onClick={() => toggleFAQ(item.id)}
               >
-                <span style={{ direction: isRTL ? "rtl" : "ltr" }}>{item.question}</span>
+                <span style={{ direction: isRTL ? "rtl" : "ltr" }}>{getQuestion(item)}</span>
                 {openId === item.id ? (
                   <ChevronUp className="text-green flex-shrink-0" />
                 ) : (
@@ -68,7 +71,7 @@ export default function FAQSection({ language = "fr" }: FAQSectionProps) {
                 }`}
               >
                 <div className="px-6 py-5 text-chocolate/70 leading-relaxed" style={{ direction: isRTL ? "rtl" : "ltr" }}>
-                  {item.answer}
+                  {getAnswer(item)}
                 </div>
               </div>
             </div>

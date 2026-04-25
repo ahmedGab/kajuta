@@ -37,8 +37,10 @@ export type Testimonial = {
 
 export type FAQItem = {
   id: string;
-  question: string;
-  answer: string;
+  questionFr: string;
+  questionAr: string;
+  answerFr: string;
+  answerAr: string;
 };
 
 export type Pack = {
