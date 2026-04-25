@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, ShoppingBag } from "lucide-react";
-import { getLanguage } from "@/lib/storage";
+import { getLanguage, getSiteContent } from "@/lib/storage";
 import { Language } from "@/lib/types";
 import LanguageSwitcher from "./LanguageSwitcher";
 
@@ -13,9 +13,11 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const [language, setLanguage] = useState<Language>("fr");
+  const [content, setContent] = useState<any>(null);
 
   useEffect(() => {
     setLanguage(getLanguage());
+    setContent(getSiteContent());
   }, []);
 
   useEffect(() => {
@@ -45,9 +47,13 @@ export default function Header() {
       <div className="container-custom flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2" dir="ltr">
-          <span className="font-display font-bold text-2xl text-green tracking-tight">
-            CAJUTA<span className="text-caramel">.</span>
-          </span>
+          {content.logo ? (
+            <img src={content.logo} alt="Cajuta" className="h-10 object-contain" />
+          ) : (
+            <span className="font-display font-bold text-2xl text-green tracking-tight">
+              CAJUTA<span className="text-caramel">.</span>
+            </span>
+          )}
         </Link>
 
         {/* Desktop Nav */}
