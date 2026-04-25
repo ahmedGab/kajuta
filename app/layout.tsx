@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import ClientLayout from "./ClientLayout";
+import DataSyncProvider from "@/components/DataSyncProvider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
@@ -35,7 +36,9 @@ export default function RootLayout({
   return (
     <html lang="fr" className="scroll-smooth">
       <body className={`${inter.variable} ${outfit.variable} flex flex-col min-h-screen`}>
-        <ClientLayout>{children}</ClientLayout>
+        <DataSyncProvider>
+          <ClientLayout>{children}</ClientLayout>
+        </DataSyncProvider>
       </body>
     </html>
   );
