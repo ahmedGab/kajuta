@@ -1,19 +1,19 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { getSiteContent, saveSiteContent } from "@/lib/storage";
 import { SectionVisibility } from "@/lib/types";
-import { Save, ChevronUp, ChevronDown, Grip, Layers, Plus } from "lucide-react";
+import { Save, ChevronUp, ChevronDown, Grip, Layers } from "lucide-react";
 
 const baseSections = [
-  { key: "hero", label: "Hero (Bannière principale)" },
+  { key: "hero", label: "Hero (Bannière)" },
   { key: "trustBar", label: "Barre de Confiance" },
-  { key: "products", label: "Section Produits" },
-  { key: "whyChooseUs", label: "Pourquoi Nous Choisir" },
+  { key: "products", label: "Produits" },
+  { key: "whyChooseUs", label: "Pourquoi Nous" },
   { key: "story", label: "Notre Histoire" },
   { key: "occasions", label: "Occasions" },
   { key: "packs", label: "Packs & Offres" },
-  { key: "testimonials", label: "Témoignages Clients" },
+  { key: "testimonials", label: "Témoignages" },
   { key: "delivery", label: "Livraison" },
   { key: "faq", label: "FAQ" },
   { key: "cta", label: "CTA Final" },
@@ -23,6 +23,7 @@ type SectionOrderItem = {
   key: string;
   label: string;
   customId?: string;
+  isCustom?: boolean;
 };
 
 export default function AdminSectionVisibility() {
@@ -49,11 +50,12 @@ export default function AdminSectionVisibility() {
     if (stored && stored.length > 0) {
       return stored;
     }
-    const base = baseSections.map(s => ({ key: s.key, label: s.label }));
+    const base = baseSections.map(s => ({ key: s.key, label: s.label, isCustom: false }));
     const customItems = customSections.map(s => ({ 
       key: `custom-${s.id}`, 
       label: s.titleFr || "Sans titre", 
-      customId: s.id 
+      customId: s.id,
+      isCustom: true 
     }));
     return [...base, ...customItems];
   });
@@ -67,6 +69,27 @@ export default function AdminSectionVisibility() {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const dragItem = useRef<number | null>(null);
+
+  useEffect(() => {
+    const customItems = customSections.map(s => ({ 
+      key: `custom-${s.id}`, 
+      label: s.titleFr || "Sans titre", 
+      customId: s.id,
+      isCustom: true 
+    }));
+    const base = baseSections.map(s => ({ key: s.key, label: s.label, isCustom: false }));
+    
+    setSectionOrder(prev => {
+      const nonCustom = prev.filter(item => !item.isCustom);
+      const updatedCustom = customSections.map(s => ({ 
+        key: `custom-${s.id}`, 
+        label: s.titleFr || "Sans titre", 
+        customId: s.id,
+        isCustom: true 
+      }));
+      return [...nonCustom, ...updatedCustom];
+    });
+  }, [customSections.length, customSections.map(s => s.titleFr).join(",")]);
 
   const handleToggle = (key: keyof SectionVisibility) => {
     setVisibility(prev => ({ ...prev, [key]: !prev[key] }));
@@ -146,14 +169,14 @@ export default function AdminSectionVisibility() {
   };
 
   const getVisibility = (section: SectionOrderItem) => {
-    if (section.customId) {
+    if (section.isCustom && section.customId) {
       return customEnabled[section.customId] ?? true;
     }
     return visibility[section.key as keyof SectionVisibility] ?? true;
   };
 
   const getToggleHandler = (section: SectionOrderItem) => {
-    if (section.customId) {
+    if (section.isCustom && section.customId) {
       return () => handleToggleCustomSection(section.customId);
     }
     return () => handleToggle(section.key as keyof SectionVisibility);
@@ -169,11 +192,10 @@ export default function AdminSectionVisibility() {
 
       <div className="bg-white p-6 rounded-xl border border-gray-200">
         <h3 className="font-bold text-lg mb-2">Ordre des Sections</h3>
-        <p className="text-gray-500 text-sm mb-4">Glissez et déposez pour réorganiser. Chaque section personnalisée apparaît独立的 dans la liste.</p>
+        <p className="text-gray-500 text-sm mb-4">Glissez les sections pour les réorganiser. Les sections personnalisées sont marquées avec <Layers size={14} className="inline text-caramel" />.</p>
         
         <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 bg-gray-50">
           {sectionOrder.map((section, idx) => {
-            const isCustom = !!section.customId;
             const isEnabled = getVisibility(section);
             const isDragging = draggedIndex === idx;
             const isDragOver = dragOverIndex === idx;
@@ -194,7 +216,9 @@ export default function AdminSectionVisibility() {
                     : isDragOver 
                       ? "border-caramel bg-caramel/10" 
                       : isEnabled 
-                        ? "border-green/30 bg-white hover:border-green/50" 
+                        ? section.isCustom 
+                          ? "border-caramel/30 bg-caramel/5 hover:border-caramel/50" 
+                          : "border-green/30 bg-white hover:border-green/50" 
                         : "border-gray-200 bg-gray-100 opacity-60"
                 }`}
               >
@@ -203,7 +227,11 @@ export default function AdminSectionVisibility() {
                 </div>
                 <span className="text-gray-400 font-mono text-sm w-6 text-center bg-gray-100 py-1 rounded">{idx + 1}</span>
                 <div className="flex items-center gap-2 flex-1">
-                  {isCustom && <Layers size={16} className="text-caramel" />}
+                  {section.isCustom && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-caramel/10 text-caramel text-xs font-semibold rounded-full">
+                      <Layers size={12} /> Personnalisé
+                    </span>
+                  )}
                   <span className={`font-semibold text-sm ${isEnabled ? "text-chocolate" : "text-gray-400"}`}>
                     {section.label}
                   </span>
@@ -242,19 +270,12 @@ export default function AdminSectionVisibility() {
         <div className="flex items-center justify-center gap-4 mt-4 text-xs text-gray-400">
           <span className="flex items-center gap-1"><Grip size={14} /> Glisser pour réorganiser</span>
           <span>|</span>
-          <span>{sectionOrder.length} sections au total</span>
-        </div>
-      </div>
-
-      <div className="bg-cream p-4 rounded-xl border border-gray-200">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Layers size={16} className="text-caramel" />
-          <span>Chaque section personnalisée est indépendante et peut être réorganisée individuellement.</span>
+          <span>{baseSections.length} sections fixes + {customSections.length} personnalisées</span>
         </div>
       </div>
 
       <button onClick={handleSave} className="btn-primary py-2 px-6 flex items-center gap-2 w-full justify-center">
-        <Save size={18} /> Sauvegarder la configuration
+        <Save size={18} /> Sauvegarder l&apos;ordre des sections
       </button>
     </div>
   );
