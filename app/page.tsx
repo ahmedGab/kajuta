@@ -32,8 +32,20 @@ const defaultVisibility: SectionVisibility = {
 };
 
 const defaultOrder = [
-  "hero", "trustBar", "products", "whyChooseUs", "story", "occasions", "packs", "testimonials", "delivery", "faq", "cta"
+  { key: "hero", label: "Hero" },
+  { key: "trustBar", label: "TrustBar" },
+  { key: "products", label: "Products" },
+  { key: "whyChooseUs", label: "WhyChooseUs" },
+  { key: "story", label: "Story" },
+  { key: "occasions", label: "Occasions" },
+  { key: "packs", label: "Packs" },
+  { key: "testimonials", label: "Testimonials" },
+  { key: "delivery", label: "Delivery" },
+  { key: "faq", label: "FAQ" },
+  { key: "cta", label: "CTA" },
 ];
+
+type SectionOrderItem = { key: string; label: string };
 
 const sectionComponents: Record<string, React.ReactNode> = {
   hero: <Hero />,
@@ -51,14 +63,20 @@ const sectionComponents: Record<string, React.ReactNode> = {
 
 export default function Home() {
   const [visibility, setVisibility] = useState<SectionVisibility | null>(null);
-  const [sectionOrder, setSectionOrder] = useState<string[]>(defaultOrder);
+  const [sectionOrder, setSectionOrder] = useState<SectionOrderItem[]>(defaultOrder);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     const content = getSiteContent();
     setVisibility(content.visibility || defaultVisibility);
-    setSectionOrder(content.sectionOrder || defaultOrder);
+    
+    const storedOrder = content.sectionOrder as SectionOrderItem[] | undefined;
+    if (storedOrder && storedOrder.length > 0) {
+      setSectionOrder(storedOrder);
+    } else {
+      setSectionOrder(defaultOrder);
+    }
   }, []);
 
   if (!mounted || visibility === null) {
@@ -75,9 +93,9 @@ export default function Home() {
     <>
       <JsonLd type="FAQPage" />
       <div className="flex flex-col">
-        {sectionOrder.map((key) => (
-          <React.Fragment key={key}>
-            {renderSection(key)}
+        {sectionOrder.map((item, idx) => (
+          <React.Fragment key={`${item.key}-${idx}`}>
+            {renderSection(item.key)}
           </React.Fragment>
         ))}
       </div>

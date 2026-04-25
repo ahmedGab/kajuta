@@ -103,7 +103,7 @@ export type CustomSectionItem = {
 
 export type SiteContent = {
   visibility: SectionVisibility;
-  sectionOrder: (keyof SectionVisibility | "custom")[];
+  sectionOrder: { key: string; label: string }[];
   logo?: string;
   hero: {
     title: LocalizedString;
