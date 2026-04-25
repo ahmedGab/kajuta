@@ -2,7 +2,7 @@
 
 import React from "react";
 import { getSiteContent, getLanguage } from "@/lib/storage";
-import { CustomSection, CustomSectionItem } from "@/lib/types";
+import { CustomSection } from "@/lib/types";
 
 const backgroundClasses: Record<string, string> = {
   background: "bg-background",
@@ -26,8 +26,6 @@ export default function CustomSectionsRenderer() {
   const content = getSiteContent();
   const lang = getLanguage();
   const sections = (content.customSections || []).sort((a, b) => a.order - b.order);
-
-  if (sections.length === 0) return null;
 
   return (
     <>
@@ -57,9 +55,11 @@ export default function CustomSectionsRenderer() {
                       <img src={item.image} alt="" className="w-full h-48 object-cover rounded-xl mb-4" />
                     )}
                     {item.contentFr && (
-                      <p className="text-chocolate/80 whitespace-pre-wrap">
-                        {lang === "ar" ? item.contentAr : item.contentFr}
-                      </p>
+                      <div className="text-left">
+                        {item.contentFr.split("\n").map((line, lineIdx) => (
+                          <p key={lineIdx} className="text-chocolate/80 whitespace-pre-wrap">{line}</p>
+                        ))}
+                      </div>
                     )}
                   </div>
                 ))}
