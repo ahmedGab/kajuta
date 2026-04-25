@@ -25,7 +25,7 @@ export default function Home() {
         <PacksSection />
         <Testimonials />
         <DeliverySection />
-        <FAQSection>
+        <FAQSection />
         <CTASection />
       </div>
     </>
