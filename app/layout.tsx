@@ -1,9 +1,12 @@
+"use client";
+
 import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import { usePathname } from "next/navigation";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
@@ -31,15 +34,18 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+  const isAdminPage = pathname?.startsWith("/cajuta-dashboard") || pathname?.startsWith("/cajuta-admin-login");
+
   return (
     <html lang="fr" className="scroll-smooth">
       <body className={`${inter.variable} ${outfit.variable} flex flex-col min-h-screen`}>
-        <Header />
-        <main className="flex-grow pt-[72px]">
+        {!isAdminPage && <Header />}
+        <main className={`flex-grow ${!isAdminPage ? "pt-[72px]" : ""}`}>
           {children}
         </main>
-        <Footer />
-        <WhatsAppButton />
+        {!isAdminPage && <Footer />}
+        {!isAdminPage && <WhatsAppButton />}
       </body>
     </html>
   );
