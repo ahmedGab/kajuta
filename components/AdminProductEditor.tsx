@@ -4,6 +4,21 @@ import React, { useState } from "react";
 import { getProducts, saveProducts } from "@/lib/storage";
 import { Product } from "@/lib/types";
 import { Edit2, Plus, Trash2, Save, X } from "lucide-react";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { initializeApp } from "firebase/app";
+import { getStorage } from "firebase/storage";
+
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
+
+const app = initializeApp(firebaseConfig);
+const storage = getStorage(app);
 
 export default function AdminProductEditor() {
   const [products, setProducts] = useState<Product[]>(getProducts());
@@ -14,39 +29,35 @@ export default function AdminProductEditor() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [tempPreview, setTempPreview] = useState<string>("");
 
-  const uploadFileWithProgress = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", "/api/upload");
+const uploadFileWithProgress = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const safeName = file.name ? file.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'uploaded_file';
+    const filename = `${uniqueSuffix}-${safeName}`;
+    
+    const storageRef = ref(storage, `uploads/${filename}`);
+    const uploadTask = uploadBytesResumable(storageRef, file);
 
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const percent = Math.round((event.loaded / event.total) * 100);
-          setUploadProgress(percent);
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+        setUploadProgress(progress);
+      },
+      (error) => {
+        reject(new Error(error.message || "Upload failed"));
+      },
+      async () => {
+        try {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          resolve(downloadURL);
+        } catch (error) {
+          reject(new Error("Failed to get download URL"));
         }
-      };
-
-      xhr.onload = () => {
-        if (xhr.status === 200) {
-          try {
-            const data = JSON.parse(xhr.responseText);
-            if (data.success) resolve(data.url);
-            else reject(new Error(data.error));
-          } catch (e) {
-            reject(new Error("Invalid response"));
-          }
-        } else {
-          reject(new Error("Server error"));
-        }
-      };
-
-      xhr.onerror = () => reject(new Error("Network error"));
-
-      const formData = new FormData();
-      formData.append("file", file);
-      xhr.send(formData);
-    });
-  };
+      }
+    );
+  });
+};
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

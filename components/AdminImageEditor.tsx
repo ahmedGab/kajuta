@@ -3,6 +3,21 @@
 import React, { useState } from "react";
 import { getSiteContent, saveSiteContent } from "@/lib/storage";
 import { Save } from "lucide-react";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { initializeApp } from "firebase/app";
+import { getStorage } from "firebase/storage";
+
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
+
+const app = initializeApp(firebaseConfig);
+const storage = getStorage(app);
 
 export default function AdminImageEditor() {
   const content = getSiteContent();
@@ -16,50 +31,44 @@ export default function AdminImageEditor() {
   const [isUploadingStory, setIsUploadingStory] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
-  // Helper file uploader avec barre de progression XHR
   const uploadFileWithProgress = (file: File, key: string): Promise<string> => {
     return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", "/api/upload");
-
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const percentComplete = (event.loaded / event.total) * 100;
-          setUploadProgressHelper(prev => ({ ...prev, [key]: Math.round(percentComplete) }));
-        }
-      };
-
-      xhr.onload = () => {
-        if (xhr.status === 200) {
-          try {
-            const data = JSON.parse(xhr.responseText);
-            if (data.success) resolve(data.url);
-            else reject(new Error(data.error));
-          } catch(e) {
-            reject(new Error("Invalid response"));
-          }
-        } else {
-          reject(new Error("Server error"));
-        }
-        setUploadProgressHelper(prev => {
-           const newObj = {...prev};
-           delete newObj[key];
-           return newObj;
-        });
-      };
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      const safeName = file.name ? file.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'uploaded_file';
+      const filename = `${uniqueSuffix}-${safeName}`;
       
-      xhr.onerror = () => {
-        setUploadProgressHelper(prev => {
-           const newObj = {...prev};
-           delete newObj[key];
-           return newObj;
-        });
-        reject(new Error("Network error"));
-      };
+      const storageRef = ref(storage, `uploads/${filename}`);
+      const uploadTask = uploadBytesResumable(storageRef, file);
 
-      const formData = new FormData();
-      formData.append("file", file);
-      xhr.send(formData);
+      uploadTask.on(
+        "state_changed",
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setUploadProgressHelper((prev) => ({ ...prev, [key]: Math.round(progress) }));
+        },
+        (error) => {
+          console.error("Upload error:", error);
+          setUploadProgressHelper((prev) => {
+            const newObj = { ...prev };
+            delete newObj[key];
+            return newObj;
+          });
+          reject(new Error(error.message || "Upload failed"));
+        },
+        async () => {
+          try {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            setUploadProgressHelper((prev) => {
+              const newObj = { ...prev };
+              delete newObj[key];
+              return newObj;
+            });
+            resolve(downloadURL);
+          } catch (error) {
+            reject(new Error("Failed to get download URL"));
+          }
+        }
+      );
     });
   };
 
@@ -78,7 +87,8 @@ export default function AdminImageEditor() {
       if (type === "logo") setLogoImage(url);
       setNotification(`Image ${type} téléchargée avec succès. N'oubliez pas de sauvegarder !`);
     } catch(err: any) {
-      alert("Erreur lors de l'upload: " + err.message);
+      console.error("Upload error:", err);
+      setNotification(`Erreur lors de l'upload: ${err.message}`);
     } finally {
       if (type === "hero") setIsUploadingHero(false);
       if (type === "story") setIsUploadingStory(false);
@@ -86,161 +96,129 @@ export default function AdminImageEditor() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const newContent = { ...content };
-    newContent.hero.image = heroImage;
-    if(newContent.story) newContent.story.image = storyImage;
-    newContent.logo = logoImage;
-    saveSiteContent(newContent);
-    setNotification("Images sauvegardées avec succès.");
-    setTimeout(() => setNotification(""), 3000);
-  };
-
-  const renderProgressBar = (key: string) => {
-    if (uploadProgressHelper[key] !== undefined) {
-      return (
-        <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-          <div className="bg-green h-2.5 rounded-full transition-all duration-300" style={{ width: `${uploadProgressHelper[key]}%` }}></div>
-          <p className="text-xs text-green font-semibold mt-1">{uploadProgressHelper[key]}%</p>
-        </div>
-      );
+    newContent.hero = { ...newContent.hero, image: heroImage };
+    if (storyImage) {
+      newContent.story = { ...newContent.story, image: storyImage };
     }
-    return null;
+    newContent.logo = logoImage;
+    
+    const success = await saveSiteContent(newContent);
+    if (success) {
+      setNotification("Images sauvegardées avec succès !");
+    } else {
+      setNotification("Erreur lors de la sauvegarde");
+    }
   };
 
   return (
     <div className="space-y-6">
       {notification && (
-        <div className="bg-green/10 text-green px-4 py-3 rounded-lg font-medium">{notification}</div>
+        <div className={`px-4 py-3 rounded-lg border ${
+          notification.includes("succès") 
+            ? "bg-green/10 text-green border-green/20" 
+            : "bg-red-10 text-red border-red/20"
+        }`}>
+          {notification}
+        </div>
       )}
 
-        <div className="bg-white p-6 rounded-xl border border-gray-200">
-        <h3 className="font-bold mb-4">Logo du Site</h3>
-        <div className="flex flex-col md:flex-row gap-6 items-start">
-          <div className="w-full md:w-1/2">
-            <label className="block text-sm font-semibold mb-2">URL du Logo ou Fichier Local (PNG/JPG/SVG)</label>
-            <div className="mb-4">
-              <input 
-                type="text" 
-                className="w-full p-2 border border-gray-300 rounded mb-2" 
-                value={logoImage} 
-                onChange={(e) => setLogoImage(e.target.value)} 
-                placeholder="/chemin-vers-logo.png ou https://..."
-              />
-              <div className="flex items-center gap-4 mt-2">
-                <span className="text-sm font-medium text-gray-500">OU</span>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  onChange={(e) => handleFileUpload(e, "logo")}
-                  disabled={isUploadingLogo}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green/10 file:text-green hover:file:bg-green/20"
-                />
-              </div>
-              {renderProgressBar("logo")}
-            </div>
-            <p className="text-xs text-gray-500">Un fond transparent (PNG ou SVG) est recommandé pour le logo.</p>
-          </div>
-          <div className="w-full md:w-1/2">
-            <div className="aspect-video bg-gray-100 rounded-xl overflow-hidden shadow-sm relative flex items-center justify-center p-4">
-              {logoImage ? (
-                <img src={logoImage} alt="Preview Logo" className="max-h-full max-w-full object-contain" />
-              ) : (
-                <div className="text-gray-400">Aucun logo configuré (Texte natif utilisé)</div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
+      {/* Hero Image */}
       <div className="bg-white p-6 rounded-xl border border-gray-200">
-        <h3 className="font-bold mb-4">Image Hero (Accueil)</h3>
-        <div className="flex flex-col md:flex-row gap-6 items-start">
-          <div className="w-full md:w-1/2">
-            <label className="block text-sm font-semibold mb-2">URL de l&apos;image principale ou Fichier Local</label>
-            <div className="mb-4">
-              <input 
-                type="text" 
-                className="w-full p-2 border border-gray-300 rounded mb-2" 
-                value={heroImage} 
-                onChange={(e) => setHeroImage(e.target.value)} 
-                placeholder="https://..."
-              />
-              <div className="flex items-center gap-4 mt-2">
-                <span className="text-sm font-medium text-gray-500">OU</span>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  onChange={(e) => handleFileUpload(e, "hero")}
-                  disabled={isUploadingHero}
-                  className="block w-full text-sm text-gray-500
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-full file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-green/10 file:text-green
-                    hover:file:bg-green/20"
-                />
-              </div>
-              {renderProgressBar("hero")}
+        <h3 className="font-bold mb-4">Image Hero</h3>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => handleFileUpload(e, "hero")}
+          disabled={isUploadingHero}
+          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green file:text-white hover:file:bg-green/90"
+        />
+        {isUploadingHero && uploadProgressHelper.hero !== undefined && (
+          <div className="mt-4">
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div className="bg-green h-2.5 rounded-full" style={{ width: `${uploadProgressHelper.hero}%` }}></div>
             </div>
+            <p className="text-sm text-gray-500 mt-1">{uploadProgressHelper.hero}%</p>
           </div>
-          <div className="w-full md:w-1/2">
-            <div className="aspect-video bg-gray-100 rounded-xl overflow-hidden shadow-sm relative">
-              {heroImage ? (
-                <img src={heroImage} alt="Preview Hero" className="w-full h-full object-cover" />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-gray-400">Aucune image</div>
-              )}
-            </div>
+        )}
+        {heroImage && (
+          <div className="mt-4">
+            <img src={heroImage} alt="Hero Preview" className="max-h-48 rounded-lg object-cover" />
           </div>
-        </div>
+        )}
       </div>
 
-      <div className="bg-white p-6 rounded-xl border border-gray-200 mt-6">
-        <h3 className="font-bold mb-4">Image Histoire (À propos)</h3>
-        <div className="flex flex-col md:flex-row gap-6 items-start">
-          <div className="w-full md:w-1/2">
-            <label className="block text-sm font-semibold mb-2">URL de l&apos;image Histoire ou Fichier Local</label>
-            <div className="mb-4">
-              <input 
-                type="text" 
-                className="w-full p-2 border border-gray-300 rounded mb-2" 
-                value={storyImage} 
-                onChange={(e) => setStoryImage(e.target.value)} 
-                placeholder="https://..."
-              />
-              <div className="flex items-center gap-4 mt-2">
-                <span className="text-sm font-medium text-gray-500">OU</span>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  onChange={(e) => handleFileUpload(e, "story")}
-                  disabled={isUploadingStory}
-                  className="block w-full text-sm text-gray-500
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-full file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-green/10 file:text-green
-                    hover:file:bg-green/20"
-                />
-              </div>
-              {renderProgressBar("story")}
+      {/* Story Image */}
+      <div className="bg-white p-6 rounded-xl border border-gray-200">
+        <h3 className="font-bold mb-4">Image Notre Histoire</h3>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => handleFileUpload(e, "story")}
+          disabled={isUploadingStory}
+          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green file:text-white hover:file:bg-green/90"
+        />
+        {isUploadingStory && uploadProgressHelper.story !== undefined && (
+          <div className="mt-4">
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div className="bg-green h-2.5 rounded-full" style={{ width: `${uploadProgressHelper.story}%` }}></div>
             </div>
+            <p className="text-sm text-gray-500 mt-1">{uploadProgressHelper.story}%</p>
           </div>
-          <div className="w-full md:w-1/2">
-            <div className="aspect-video bg-gray-100 rounded-xl overflow-hidden shadow-sm relative">
-              {storyImage ? (
-                <img src={storyImage} alt="Preview Story" className="w-full h-full object-cover" />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-gray-400">Aucune image</div>
-              )}
-            </div>
+        )}
+        {storyImage && (
+          <div className="mt-4">
+            <img src={storyImage} alt="Story Preview" className="max-h-48 rounded-lg object-cover" />
           </div>
-        </div>
+        )}
       </div>
 
-      <button onClick={handleSave} className="btn-primary py-2 px-6 flex items-center gap-2">
-        <Save size={18} /> Sauvegarder les images
+      {/* Logo */}
+      <div className="bg-white p-6 rounded-xl border border-gray-200">
+        <h3 className="font-bold mb-4">Logo du Site</h3>
+        <label className="block text-sm font-semibold mb-2">URL du Logo ou Fichier Local (PNG/JPG/SVG)</label>
+        <div className="flex gap-2 mb-4">
+          <input
+            type="text"
+            value={logoImage}
+            onChange={(e) => setLogoImage(e.target.value)}
+            placeholder="https://..."
+            className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green/50"
+          />
+          <label className="px-4 py-2 bg-green text-white rounded-lg cursor-pointer hover:bg-green/90 transition-colors">
+            <span>Parcourir</span>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleFileUpload(e, "logo")}
+              disabled={isUploadingLogo}
+              className="hidden"
+            />
+          </label>
+        </div>
+        {isUploadingLogo && uploadProgressHelper.logo !== undefined && (
+          <div className="mt-4">
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div className="bg-green h-2.5 rounded-full" style={{ width: `${uploadProgressHelper.logo}%` }}></div>
+            </div>
+            <p className="text-sm text-gray-500 mt-1">{uploadProgressHelper.logo}%</p>
+          </div>
+        )}
+        {logoImage && (
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <img src={logoImage} alt="Preview Logo" className="max-h-full max-w-full object-contain" />
+          </div>
+        )}
+      </div>
+
+      {/* Save Button */}
+      <button
+        onClick={handleSave}
+        className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-green text-white rounded-xl font-semibold hover:bg-green/90 transition-colors"
+      >
+        <Save size={20} />
+        Sauvegarder les Images
       </button>
     </div>
   );
