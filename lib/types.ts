@@ -119,6 +119,10 @@ export type SiteContent = {
   visibility: SectionVisibility;
   logo?: string;
   customColors?: Record<string, string>;
+  header: {
+    navLinks: { label: LocalizedString; href: string }[];
+    ctaButton: LocalizedString;
+  };
   hero: {
     title: LocalizedString;
     subtitle: LocalizedString;

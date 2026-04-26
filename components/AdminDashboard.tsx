@@ -14,11 +14,12 @@ import AdminFooterEditor from "./AdminFooterEditor";
 import AdminColorEditor from "./AdminColorEditor";
 import AdminSectionVisibility from "./AdminSectionVisibility";
 import AdminCustomSections from "./AdminCustomSections";
-import { LayoutDashboard, LogOut, FileText, Package, Image as ImageIcon, MessageSquare, HelpCircle, Eye, RefreshCw, Gift, Footprints, Palette, Layout, Layers } from "lucide-react";
+import AdminHeaderEditor from "./AdminHeaderEditor";
+import { LayoutDashboard, LogOut, FileText, Package, Image as ImageIcon, MessageSquare, HelpCircle, Eye, RefreshCw, Gift, Footprints, Palette, Layout, Layers, Menu } from "lucide-react";
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("paragraphes");
+  const [activeTab, setActiveTab] = useState("header");
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -44,6 +45,7 @@ export default function AdminDashboard() {
   if (!isClient) return <div className="min-h-screen bg-gray-50 p-8 flex justify-center">Chargement...</div>;
 
   const tabs = [
+    { id: "header", name: "Header", icon: <Menu size={18} /> },
     { id: "paragraphes", name: "Paragraphes", icon: <FileText size={18} /> },
     { id: "produits", name: "Produits", icon: <Package size={18} /> },
     { id: "packs", name: "Packs", icon: <Gift size={18} /> },
@@ -109,6 +111,7 @@ export default function AdminDashboard() {
           </header>
 
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8">
+            {activeTab === "header" && <AdminHeaderEditor />}
             {activeTab === "paragraphes" && <AdminParagraphEditor />}
             {activeTab === "produits" && <AdminProductEditor />}
             {activeTab === "packs" && <AdminPacksEditor />}

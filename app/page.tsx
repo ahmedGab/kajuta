@@ -64,6 +64,7 @@ const sectionComponents: Record<string, React.ReactNode> = {
 const emptyContent: SiteContent = {
   visibility: defaultVisibility,
   logo: "",
+  header: { navLinks: [], ctaButton: { fr: "", ar: "" } },
   hero: { title: { fr: "", ar: "" }, subtitle: { fr: "", ar: "" }, image: "", primaryButton: { fr: "", ar: "" }, secondaryButton: { fr: "", ar: "" } },
   trust: { items: { fr: [], ar: [] } },
   story: { title: { fr: "", ar: "" }, paragraphs: { fr: [], ar: [] }, image: "" },
