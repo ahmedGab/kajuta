@@ -92,6 +92,7 @@ export default function AdminHeaderEditor() {
   const handleSave = async () => {
     if (!content) return;
     await db.saveSiteContent(content);
+    localStorage.setItem("cajuta_header_cache", JSON.stringify(content));
     setNotification("Header sauvegardé !");
     setTimeout(() => setNotification(""), 3000);
   };
