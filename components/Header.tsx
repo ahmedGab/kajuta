@@ -33,7 +33,7 @@ export default function Header() {
 
   const isRTL = language === "ar";
 
-  const navLinks = content?.header?.navLinks || [
+const navLinks = content?.header?.navLinks || [
     { label: { fr: "Accueil", ar: "الرئيسية" }, href: "/" },
     { label: { fr: "Nos Produits", ar: "منتجاتنا" }, href: "/produits" },
     { label: { fr: "Notre Histoire", ar: "قصتنا" }, href: "/a-propos" },
@@ -55,8 +55,8 @@ export default function Header() {
             {navLinks.map((link: any, idx: number) => (
               <Link 
                 key={idx} 
-                href={link.href} 
-                className={`font-medium hover:text-caramel transition-colors ${isScrolled ? "text-chocolate" : "text-chocolate"} ${pathname === link.href ? "text-caramel" : ""}`}
+                href={link.sectionId || link.href} 
+                className={`font-medium hover:text-caramel transition-colors ${isScrolled ? "text-chocolate" : "text-chocolate"} ${pathname === (link.sectionId || link.href) ? "text-caramel" : ""}`}
               >
                 {link.label?.[language] || link.label}
               </Link>
@@ -83,9 +83,9 @@ export default function Header() {
             {navLinks.map((link: any, idx: number) => (
               <Link 
                 key={idx} 
-                href={link.href} 
+                href={link.sectionId || link.href} 
                 onClick={() => setMobileMenuOpen(false)} 
-                className={`block py-2 font-medium ${isRTL ? "text-right" : ""} ${pathname === link.href ? "text-caramel" : "text-chocolate"}`}
+                className={`block py-2 font-medium ${isRTL ? "text-right" : ""} ${pathname === (link.sectionId || link.href) ? "text-caramel" : "text-chocolate"}`}
               >
                 {link.label?.[language] || link.label}
               </Link>

@@ -3,7 +3,21 @@
 import React, { useState, useEffect } from "react";
 import * as db from "@/lib/db";
 import { Language, SiteContent } from "@/lib/types";
-import { Plus, Trash2, Save, X, GripVertical } from "lucide-react";
+import { Plus, Trash2, Save, GripVertical, Link } from "lucide-react";
+
+type NavLink = { label: { fr: string; ar: string }; href: string; sectionId?: string };
+
+const sectionsList = [
+  { id: "", name: { fr: "Lien externe (autre page)", ar: "رابط خارجي" } },
+  { id: "#produits", name: { fr: "Section Produits", ar: "قسم المنتجات" } },
+  { id: "#packs", name: { fr: "Section Packs", ar: "قسم العروض" } },
+  { id: "#faq", name: { fr: "Section FAQ", ar: "قسم الأسئلة" } },
+  { id: "/", name: { fr: "Accueil", ar: "الرئيسية" } },
+  { id: "/produits", name: { fr: "Page Produits", ar: "صفحة المنتجات" } },
+  { id: "/a-propos", name: { fr: "À propos", ar: "من نحن" } },
+  { id: "/faq", name: { fr: "FAQ", ar: "الأسئلة الشائعة" } },
+  { id: "/contact", name: { fr: "Contact", ar: "اتصل بنا" } },
+];
 
 export default function AdminHeaderEditor() {
   const [content, setContent] = useState<SiteContent | null>(null);
@@ -18,20 +32,20 @@ export default function AdminHeaderEditor() {
     });
   }, []);
 
-  const navLinks = (content?.header?.navLinks || []) as { label: { fr: string; ar: string }; href: string }[];
+  const navLinks = (content?.header?.navLinks || []) as NavLink[];
   const ctaButton = (content?.header?.ctaButton || { fr: "Commander", ar: "اطلب" }) as { fr: string; ar: string };
 
   const handleAddLink = () => {
     if (!content) return;
-    const newLinks = [...navLinks, { label: { fr: "Nouveau lien", ar: "رابط جديد" }, href: "/" }];
+    const newLinks: NavLink[] = [...navLinks, { label: { fr: "Nouveau lien", ar: "رابط جديد" }, href: "/" }];
     setContent({ ...content, header: { ...content.header, navLinks: newLinks } });
   };
 
-  const handleUpdateLink = (index: number, field: string, value: any) => {
+  const handleUpdateLink = (index: number, field: string, value: string) => {
     if (!content) return;
     const newLinks = [...navLinks];
-    if (field === "href") {
-      newLinks[index] = { ...newLinks[index], href: value };
+    if (field === "href" || field === "sectionId") {
+      newLinks[index] = { ...newLinks[index], [field]: value };
     } else {
       newLinks[index] = { 
         ...newLinks[index], 
@@ -128,22 +142,40 @@ export default function AdminHeaderEditor() {
 
         <div className="space-y-3">
           {navLinks.map((link, idx) => (
-            <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg flex-wrap">
               <GripVertical className="text-gray-300 cursor-move" size={20} />
-              <input 
-                type="text" 
-                className="flex-1 p-2 border rounded" 
-                value={link.label[selectedLang]} 
-                onChange={(e) => handleUpdateLink(idx, selectedLang, e.target.value)}
-                placeholder={selectedLang === "fr" ? "Label (FR)" : "التسمية (AR)"}
-              />
-              <input 
-                type="text" 
-                className="w-40 p-2 border rounded" 
-                value={link.href} 
-                onChange={(e) => handleUpdateLink(idx, "href", e.target.value)}
-                placeholder="/chemin"
-              />
+              
+              <div className="flex-1 min-w-[200px]">
+                <input 
+                  type="text" 
+                  className="w-full p-2 border rounded" 
+                  value={link.label[selectedLang]} 
+                  onChange={(e) => handleUpdateLink(idx, selectedLang, e.target.value)}
+                  placeholder={selectedLang === "fr" ? "Nom du lien" : "اسم الرابط"}
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Link size={16} className="text-gray-400" />
+                <select 
+                  className="p-2 border rounded text-sm"
+                  value={link.sectionId || link.href}
+                  onChange={(e) => handleUpdateLink(idx, "sectionId", e.target.value)}
+                >
+                  {sectionsList.map(sec => (
+                    <option key={sec.id} value={sec.id}>
+                      {sec.name[selectedLang]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {link.sectionId && (
+                <span className="text-xs text-green bg-green/10 px-2 py-1 rounded">
+                  Section
+                </span>
+              )}
+
               <button 
                 onClick={() => handleDeleteLink(idx)}
                 className="p-2 text-red-500 hover:bg-red-50 rounded"

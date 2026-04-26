@@ -120,7 +120,7 @@ export type SiteContent = {
   logo?: string;
   customColors?: Record<string, string>;
   header: {
-    navLinks: { label: LocalizedString; href: string }[];
+    navLinks: { label: LocalizedString; href: string; sectionId?: string }[];
     ctaButton: LocalizedString;
   };
   hero: {
