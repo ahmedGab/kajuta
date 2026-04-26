@@ -33,7 +33,10 @@ export default function Header() {
 
   const isRTL = language === "ar";
 
-const isActiveLink = (linkHref: string) => {
+  const navLinks = content?.header?.navLinks || [];
+  const ctaButton = content?.header?.ctaButton || { fr: "Commander", ar: "اطلب" };
+
+  const isActiveLink = (linkHref: string) => {
     if (linkHref.startsWith("#")) {
       return false;
     }
