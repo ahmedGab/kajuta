@@ -33,13 +33,12 @@ export default function Header() {
 
   const isRTL = language === "ar";
 
-const navLinks = content?.header?.navLinks || [
-    { label: { fr: "Accueil", ar: "الرئيسية" }, href: "/" },
-    { label: { fr: "Nos Produits", ar: "منتجاتنا" }, href: "/produits" },
-    { label: { fr: "Notre Histoire", ar: "قصتنا" }, href: "/a-propos" },
-    { label: { fr: "FAQ", ar: "الأسئلة" }, href: "/faq" }
-  ];
-  const ctaButton = content?.header?.ctaButton || { fr: "Commander", ar: "اطلب" };
+const isActiveLink = (linkHref: string) => {
+    if (linkHref.startsWith("#")) {
+      return false;
+    }
+    return pathname === linkHref;
+  };
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-soft" : "bg-transparent"}`}>
@@ -55,8 +54,8 @@ const navLinks = content?.header?.navLinks || [
             {navLinks.map((link: any, idx: number) => (
               <Link 
                 key={idx} 
-                href={link.sectionId || link.href} 
-                className={`font-medium hover:text-caramel transition-colors ${isScrolled ? "text-chocolate" : "text-chocolate"} ${pathname === (link.sectionId || link.href) ? "text-caramel" : ""}`}
+                href={link.sectionId || link.href}
+                className={`font-medium transition-colors ${isScrolled ? "text-chocolate" : "text-chocolate"} ${isActiveLink(link.sectionId || link.href) ? "text-caramel font-bold" : "hover:text-caramel"}`}
               >
                 {link.label?.[language] || link.label}
               </Link>
@@ -83,9 +82,9 @@ const navLinks = content?.header?.navLinks || [
             {navLinks.map((link: any, idx: number) => (
               <Link 
                 key={idx} 
-                href={link.sectionId || link.href} 
+                href={link.sectionId || link.href}
                 onClick={() => setMobileMenuOpen(false)} 
-                className={`block py-2 font-medium ${isRTL ? "text-right" : ""} ${pathname === (link.sectionId || link.href) ? "text-caramel" : "text-chocolate"}`}
+                className={`block py-2 font-medium ${isRTL ? "text-right" : ""} ${isActiveLink(link.sectionId || link.href) ? "text-caramel font-bold" : "text-chocolate"}`}
               >
                 {link.label?.[language] || link.label}
               </Link>
