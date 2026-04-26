@@ -8,15 +8,14 @@ import { Plus, Trash2, Save, GripVertical, Link } from "lucide-react";
 type NavLink = { label: { fr: string; ar: string }; href: string; sectionId?: string };
 
 const sectionsList = [
-  { id: "", name: { fr: "Lien externe (autre page)", ar: "رابط خارجي" } },
   { id: "#produits", name: { fr: "Section Produits", ar: "قسم المنتجات" } },
   { id: "#packs", name: { fr: "Section Packs", ar: "قسم العروض" } },
   { id: "#faq", name: { fr: "Section FAQ", ar: "قسم الأسئلة" } },
-  { id: "/", name: { fr: "Accueil", ar: "الرئيسية" } },
+  { id: "/", name: { fr: "Page Accueil", ar: "صفحة الرئيسية" } },
   { id: "/produits", name: { fr: "Page Produits", ar: "صفحة المنتجات" } },
-  { id: "/a-propos", name: { fr: "À propos", ar: "من نحن" } },
-  { id: "/faq", name: { fr: "FAQ", ar: "الأسئلة الشائعة" } },
-  { id: "/contact", name: { fr: "Contact", ar: "اتصل بنا" } },
+  { id: "/a-propos", name: { fr: "Page À propos", ar: "صفحة من نحن" } },
+  { id: "/faq", name: { fr: "Page FAQ", ar: "صفحة الأسئلة" } },
+  { id: "/contact", name: { fr: "Page Contact", ar: "صفحة اتصل بنا" } },
 ];
 
 export default function AdminHeaderEditor() {
@@ -41,17 +40,35 @@ export default function AdminHeaderEditor() {
     setContent({ ...content, header: { ...content.header, navLinks: newLinks } });
   };
 
-  const handleUpdateLink = (index: number, field: string, value: string) => {
+  const handleLabelChange = (index: number, lang: Language, value: string) => {
     if (!content) return;
     const newLinks = [...navLinks];
-    if (field === "href" || field === "sectionId") {
-      newLinks[index] = { ...newLinks[index], [field]: value };
-    } else {
-      newLinks[index] = { 
-        ...newLinks[index], 
-        label: { ...newLinks[index].label, [field]: value }
-      };
-    }
+    newLinks[index] = {
+      ...newLinks[index],
+      label: { ...newLinks[index].label, [lang]: value }
+    };
+    setContent({ ...content, header: { ...content.header, navLinks: newLinks } });
+  };
+
+  const handleHrefChange = (index: number, value: string, isSection: boolean) => {
+    if (!content) return;
+    const newLinks = [...navLinks];
+    newLinks[index] = { 
+      ...newLinks[index], 
+      href: value,
+      sectionId: isSection ? value : undefined
+    };
+    setContent({ ...content, header: { ...content.header, navLinks: newLinks } });
+  };
+
+  const handleSectionSelect = (index: number, value: string) => {
+    if (!content) return;
+    const newLinks = [...navLinks];
+    newLinks[index] = { 
+      ...newLinks[index], 
+      href: value,
+      sectionId: value
+    };
     setContent({ ...content, header: { ...content.header, navLinks: newLinks } });
   };
 
@@ -140,28 +157,50 @@ export default function AdminHeaderEditor() {
           </button>
         </div>
 
+        {/* Header Row */}
+        <div className="grid grid-cols-12 gap-2 mb-2 text-sm font-medium text-gray-500">
+          <div className="col-span-1"></div>
+          <div className="col-span-3">Nom du lien</div>
+          <div className="col-span-4">Lien (URL)</div>
+          <div className="col-span-3">Section rapide</div>
+          <div className="col-span-1"></div>
+        </div>
+
         <div className="space-y-3">
           {navLinks.map((link, idx) => (
-            <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg flex-wrap">
-              <GripVertical className="text-gray-300 cursor-move" size={20} />
+            <div key={idx} className="grid grid-cols-12 gap-2 items-center p-3 bg-gray-50 rounded-lg">
+              <div className="col-span-1">
+                <GripVertical className="text-gray-300 cursor-move" size={20} />
+              </div>
               
-              <div className="flex-1 min-w-[200px]">
+              <div className="col-span-3">
                 <input 
                   type="text" 
                   className="w-full p-2 border rounded" 
                   value={link.label[selectedLang]} 
-                  onChange={(e) => handleUpdateLink(idx, selectedLang, e.target.value)}
+                  onChange={(e) => handleLabelChange(idx, selectedLang, e.target.value)}
                   placeholder={selectedLang === "fr" ? "Nom du lien" : "اسم الرابط"}
                 />
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="col-span-4 flex items-center gap-2">
                 <Link size={16} className="text-gray-400" />
+                <input 
+                  type="text" 
+                  className="w-full p-2 border rounded text-sm" 
+                  value={link.href} 
+                  onChange={(e) => handleHrefChange(idx, e.target.value, false)}
+                  placeholder="/page ou #section"
+                />
+              </div>
+
+              <div className="col-span-3 flex items-center gap-2">
                 <select 
-                  className="p-2 border rounded text-sm"
-                  value={link.sectionId || link.href}
-                  onChange={(e) => handleUpdateLink(idx, "sectionId", e.target.value)}
+                  className="w-full p-2 border rounded text-sm"
+                  value={link.sectionId || ""}
+                  onChange={(e) => handleSectionSelect(idx, e.target.value)}
                 >
+                  <option value="">Sélectionner...</option>
                   {sectionsList.map(sec => (
                     <option key={sec.id} value={sec.id}>
                       {sec.name[selectedLang]}
@@ -170,18 +209,14 @@ export default function AdminHeaderEditor() {
                 </select>
               </div>
               
-              {link.sectionId && (
-                <span className="text-xs text-green bg-green/10 px-2 py-1 rounded">
-                  Section
-                </span>
-              )}
-
-              <button 
-                onClick={() => handleDeleteLink(idx)}
-                className="p-2 text-red-500 hover:bg-red-50 rounded"
-              >
-                <Trash2 size={18} />
-              </button>
+              <div className="col-span-1 flex justify-end">
+                <button 
+                  onClick={() => handleDeleteLink(idx)}
+                  className="p-2 text-red-500 hover:bg-red-50 rounded"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
             </div>
           ))}
         </div>
