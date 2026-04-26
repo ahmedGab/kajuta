@@ -5,24 +5,124 @@ import { SiteContent, Product, Testimonial, FAQItem } from "./types";
 
 const SITE_CONTENT_ID = "main";
 
-export async function getSiteContent(): Promise<SiteContent | null> {
-  try {
-    const { data, error } = await supabase
-      .from("site_content")
-      .select("data")
-      .eq("id", SITE_CONTENT_ID)
-      .single();
+let contentPromise: Promise<SiteContent | null> | null = null;
+let productsPromise: Promise<Product[]> | null = null;
+let testimonialsPromise: Promise<Testimonial[]> | null = null;
+let faqPromise: Promise<FAQItem[]> | null = null;
 
-    if (error) {
-      console.error("Error getting site content:", error);
+const createContentPromise = () => {
+  const cached = localStorage.getItem("cajuta_site_content");
+  if (cached) {
+    try {
+      const parsed = JSON.parse(cached);
+      if (parsed) return Promise.resolve(parsed);
+    } catch (e) {}
+  }
+
+  return (async () => {
+    try {
+      const { data, error } = await supabase
+        .from("site_content")
+        .select("data")
+        .eq("id", SITE_CONTENT_ID)
+        .single();
+
+      if (error) return null;
+
+      const content = data?.data as SiteContent | null;
+      if (content) {
+        localStorage.setItem("cajuta_site_content", JSON.stringify(content));
+      }
+      return content;
+    } catch {
       return null;
     }
+  })();
+};
 
-    return data?.data as SiteContent | null;
-  } catch (error) {
-    console.error("Error getting site content:", error);
-    return null;
+const createProductsPromise = () => {
+  const cached = localStorage.getItem("cajuta_products");
+  if (cached) {
+    try {
+      return Promise.resolve(JSON.parse(cached));
+    } catch (e) {}
   }
+
+  return (async () => {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("data")
+        .order("id", { ascending: true });
+
+      if (error) return [];
+
+      const products = data?.map((item) => item.data as Product) || [];
+      localStorage.setItem("cajuta_products", JSON.stringify(products));
+      return products;
+    } catch {
+      return [];
+    }
+  })();
+};
+
+const createTestimonialsPromise = () => {
+  const cached = localStorage.getItem("cajuta_testimonials");
+  if (cached) {
+    try {
+      return Promise.resolve(JSON.parse(cached));
+    } catch (e) {}
+  }
+
+  return (async () => {
+    try {
+      const { data, error } = await supabase
+        .from("testimonials")
+        .select("data")
+        .order("id", { ascending: true });
+
+      if (error) return [];
+
+      const testimonials = data?.map((item) => item.data as Testimonial) || [];
+      localStorage.setItem("cajuta_testimonials", JSON.stringify(testimonials));
+      return testimonials;
+    } catch {
+      return [];
+    }
+  })();
+};
+
+const createFAQPromise = () => {
+  const cached = localStorage.getItem("cajuta_faq");
+  if (cached) {
+    try {
+      return Promise.resolve(JSON.parse(cached));
+    } catch (e) {}
+  }
+
+  return (async () => {
+    try {
+      const { data, error } = await supabase
+        .from("faq")
+        .select("data")
+        .order("id", { ascending: true });
+
+      if (error) return [];
+
+      const faq = data?.map((item) => item.data as FAQItem) || [];
+      localStorage.setItem("cajuta_faq", JSON.stringify(faq));
+      return faq;
+    } catch {
+      return [];
+    }
+  })();
+};
+
+export async function getSiteContent(): Promise<SiteContent | null> {
+  if (!contentPromise) {
+    contentPromise = createContentPromise();
+  }
+  return contentPromise;
 }
 
 export async function saveSiteContent(content: SiteContent): Promise<boolean> {
@@ -31,34 +131,21 @@ export async function saveSiteContent(content: SiteContent): Promise<boolean> {
       .from("site_content")
       .upsert({ id: SITE_CONTENT_ID, data: content }, { onConflict: "id" });
 
-    if (error) {
-      console.error("Error saving site content:", error);
-      return false;
-    }
+    if (error) return false;
+    
+    localStorage.setItem("cajuta_site_content", JSON.stringify(content));
+    contentPromise = Promise.resolve(content);
     return true;
-  } catch (error) {
-    console.error("Error saving site content:", error);
+  } catch {
     return false;
   }
 }
 
 export async function getProducts(): Promise<Product[]> {
-  try {
-    const { data, error } = await supabase
-      .from("products")
-      .select("data")
-      .order("id", { ascending: true });
-
-    if (error) {
-      console.error("Error getting products:", error);
-      return [];
-    }
-
-    return data?.map((item) => item.data as Product) || [];
-  } catch (error) {
-    console.error("Error getting products:", error);
-    return [];
+  if (!productsPromise) {
+    productsPromise = createProductsPromise();
   }
+  return productsPromise;
 }
 
 export async function saveProducts(products: Product[]): Promise<boolean> {
@@ -68,60 +155,31 @@ export async function saveProducts(products: Product[]): Promise<boolean> {
       data: p,
     }));
 
-    const { error: fetchError, data: existingProducts } = await supabase
-      .from("products")
-      .select("id");
-
-    if (fetchError) {
-      console.error("Error fetching existing products:", fetchError);
-      return false;
-    }
-
+    const { data: existingProducts } = await supabase.from("products").select("id");
     const existingIds = existingProducts?.map(p => p.id) || [];
     const newIds = newRecords.map(r => r.id);
     const toDelete = existingIds.filter(id => !newIds.includes(id));
 
     if (toDelete.length > 0) {
-      const { error: deleteError } = await supabase
-        .from("products")
-        .delete()
-        .in("id", toDelete);
-      
-      if (deleteError) {
-        console.error("Error deleting products:", deleteError);
-      }
+      await supabase.from("products").delete().in("id", toDelete);
     }
 
     const { error } = await supabase.from("products").upsert(newRecords, { onConflict: "id" });
-
-    if (error) {
-      console.error("Error saving products:", error);
-      return false;
-    }
+    if (error) return false;
+    
+    localStorage.setItem("cajuta_products", JSON.stringify(products));
+    productsPromise = Promise.resolve(products);
     return true;
-  } catch (error) {
-    console.error("Error saving products:", error);
+  } catch {
     return false;
   }
 }
 
 export async function getTestimonials(): Promise<Testimonial[]> {
-  try {
-    const { data, error } = await supabase
-      .from("testimonials")
-      .select("data")
-      .order("id", { ascending: true });
-
-    if (error) {
-      console.error("Error getting testimonials:", error);
-      return [];
-    }
-
-    return data?.map((item) => item.data as Testimonial) || [];
-  } catch (error) {
-    console.error("Error getting testimonials:", error);
-    return [];
+  if (!testimonialsPromise) {
+    testimonialsPromise = createTestimonialsPromise();
   }
+  return testimonialsPromise;
 }
 
 export async function saveTestimonials(testimonials: Testimonial[]): Promise<boolean> {
@@ -141,35 +199,21 @@ export async function saveTestimonials(testimonials: Testimonial[]): Promise<boo
     }
 
     const { error } = await supabase.from("testimonials").upsert(newRecords, { onConflict: "id" });
-
-    if (error) {
-      console.error("Error saving testimonials:", error);
-      return false;
-    }
+    if (error) return false;
+    
+    localStorage.setItem("cajuta_testimonials", JSON.stringify(testimonials));
+    testimonialsPromise = Promise.resolve(testimonials);
     return true;
-  } catch (error) {
-    console.error("Error saving testimonials:", error);
+  } catch {
     return false;
   }
 }
 
 export async function getFAQ(): Promise<FAQItem[]> {
-  try {
-    const { data, error } = await supabase
-      .from("faq")
-      .select("data")
-      .order("id", { ascending: true });
-
-    if (error) {
-      console.error("Error getting FAQ:", error);
-      return [];
-    }
-
-    return data?.map((item) => item.data as FAQItem) || [];
-  } catch (error) {
-    console.error("Error getting FAQ:", error);
-    return [];
+  if (!faqPromise) {
+    faqPromise = createFAQPromise();
   }
+  return faqPromise;
 }
 
 export async function saveFAQ(faq: FAQItem[]): Promise<boolean> {
@@ -189,14 +233,12 @@ export async function saveFAQ(faq: FAQItem[]): Promise<boolean> {
     }
 
     const { error } = await supabase.from("faq").upsert(newRecords, { onConflict: "id" });
-
-    if (error) {
-      console.error("Error saving FAQ:", error);
-      return false;
-    }
+    if (error) return false;
+    
+    localStorage.setItem("cajuta_faq", JSON.stringify(faq));
+    faqPromise = Promise.resolve(faq);
     return true;
-  } catch (error) {
-    console.error("Error saving FAQ:", error);
+  } catch {
     return false;
   }
 }

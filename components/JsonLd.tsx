@@ -23,12 +23,14 @@ export default function JsonLd({ type, data, faqData }: JsonLdProps) {
       })),
     };
   } else if (type === "Product" && data) {
+    const productName = typeof data.name === 'object' ? (data.name.fr || data.name.ar || '') : data.name;
+    const productDesc = typeof data.description === 'object' ? (data.description.fr || data.description.ar || '') : data.description;
     schema = {
       "@context": "https://schema.org",
       "@type": "Product",
-      name: data.name,
+      name: productName,
       image: data.image,
-      description: data.description,
+      description: productDesc,
       offers: {
         "@type": "Offer",
         url: `https://cajuta.tn/produits/${data.slug}`,

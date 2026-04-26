@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Product } from "@/lib/types";
+import { Product, Language } from "@/lib/types";
 import JsonLd from "@/components/JsonLd";
 import { ChevronRight, ShoppingCart, Check, Info } from "lucide-react";
+import { getLanguage } from "@/lib/storage";
 
 interface ProductDetailClientProps {
   initialProduct: Product;
@@ -14,6 +15,13 @@ interface ProductDetailClientProps {
 
 export default function ProductDetailClient({ initialProduct, slug }: ProductDetailClientProps) {
   const p = initialProduct;
+  const [language] = useState<Language>(getLanguage());
+  const isRTL = language === "ar";
+
+  const getLocalized = (obj: { fr?: string; ar?: string } | undefined, fallback = "") => {
+    if (!obj) return fallback;
+    return obj[language] || obj.fr || obj.ar || fallback;
+  };
   
   if (!p) {
     return (
@@ -25,7 +33,9 @@ export default function ProductDetailClient({ initialProduct, slug }: ProductDet
     );
   }
 
-  const waMessage = `Bonjour Cajuta, je veux commander: ${p.name} (${p.weight})`;
+  const waMessage = isRTL 
+    ? `مرحبا، أريد طلب: ${getLocalized(p.name)} (${getLocalized(p.weight)})`
+    : `Bonjour Cajuta, je veux commander: ${getLocalized(p.name)} (${getLocalized(p.weight)})`;
   const waUrl = `https://wa.me/21650123456?text=${encodeURIComponent(waMessage)}`;
 
   return (
@@ -42,7 +52,7 @@ export default function ProductDetailClient({ initialProduct, slug }: ProductDet
             <span>/</span>
             <Link href="/produits" className="hover:text-caramel transition-colors">Produits</Link>
             <span>/</span>
-            <span className="text-chocolate font-medium">{p.name}</span>
+            <span className="text-chocolate font-medium">{getLocalized(p.name)}</span>
           </nav>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
@@ -51,7 +61,7 @@ export default function ProductDetailClient({ initialProduct, slug }: ProductDet
               {p.image ? (
                 <Image
                   src={p.image}
-                  alt={p.alt || p.name}
+                  alt={p.alt || getLocalized(p.name)}
                   fill
                   className="object-cover"
                   sizes="(max-width: 1024px) 100vw, 50vw"
@@ -66,9 +76,9 @@ export default function ProductDetailClient({ initialProduct, slug }: ProductDet
 
             {/* Product Info */}
             <div className="flex flex-col">
-              <span className="text-sm text-caramel font-medium mb-3 uppercase tracking-wider">{p.weight}</span>
-              <h1 className="text-3xl md:text-4xl font-display font-bold text-chocolate mb-4">{p.name}</h1>
-              <p className="text-lg text-chocolate/70 mb-6">{p.shortDescription}</p>
+              <span className="text-sm text-caramel font-medium mb-3 uppercase tracking-wider">{getLocalized(p.weight)}</span>
+              <h1 className="text-3xl md:text-4xl font-display font-bold text-chocolate mb-4">{getLocalized(p.name)}</h1>
+              <p className="text-lg text-chocolate/70 mb-6">{getLocalized(p.shortDescription)}</p>
               
               <div className="text-3xl font-bold text-green mb-8">{p.price} TND</div>
 
@@ -135,7 +145,7 @@ export default function ProductDetailClient({ initialProduct, slug }: ProductDet
             <div className="mt-16 pt-16 border-t border-gray-200">
               <h2 className="text-2xl font-display font-bold text-chocolate mb-6">Description</h2>
               <div className="prose prose-chocolate max-w-none">
-                <p className="text-chocolate/80 leading-relaxed whitespace-pre-line">{p.description}</p>
+                <p className="text-chocolate/80 leading-relaxed whitespace-pre-line">{getLocalized(p.description)}</p>
               </div>
             </div>
           )}

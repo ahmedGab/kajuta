@@ -72,7 +72,7 @@ const emptyContent: SiteContent = {
   occasions: { title: { fr: "", ar: "" }, paragraphs: { fr: [], ar: [] } },
   about: { title: { fr: "", ar: "" }, paragraphs: { fr: [], ar: [] } },
   packs: { title: { fr: "", ar: "" }, paragraphs: { fr: [], ar: [] }, items: [] },
-  footer: { description: { fr: "", ar: "" }, quickLinks: { title: { fr: "", ar: "" }, links: [] }, deliveryZones: { title: { fr: "", ar: "" }, zones: [] }, contact: { title: { fr: "", ar: "" }, address: { fr: "", ar: "" }, phone: { fr: "", ar: "" }, email: { fr: "", ar: "" } }, paragraphs: { fr: [], ar: [] } },
+  footer: { description: { fr: "", ar: "" }, quickLinks: { title: { fr: "", ar: "" }, links: [] }, deliveryZones: { title: { fr: "", ar: "" }, zones: [] }, contact: { title: { fr: "", ar: "" }, address: { fr: "", ar: "" }, phone: { fr: "", ar: "" }, email: { fr: "", ar: "" } }, socialLinks: { whatsapp: { display: true, phone: "" }, facebook: { display: false, url: "" }, instagram: { display: false, url: "" }, tiktok: { display: false, url: "" }, youtube: { display: false, url: "" } }, paragraphs: { fr: [], ar: [] } },
   finalCta: { title: { fr: "", ar: "" }, text: { fr: "", ar: "" }, button: { fr: "", ar: "" } },
   images: {},
   sectionOrder: defaultOrder,

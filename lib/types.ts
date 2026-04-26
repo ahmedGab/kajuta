@@ -26,13 +26,13 @@ export type LocalizedParagraphs = {
 
 export type Product = {
   id: string;
-  name: string;
+  name: LocalizedString;
   slug: string;
-  shortDescription: string;
-  description: string;
+  shortDescription: LocalizedString;
+  description: LocalizedString;
   image: string;
   price: number;
-  weight: string;
+  weight: LocalizedString;
   alt: string;
   ingredients: string[];
   benefits: string[];

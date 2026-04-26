@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import * as db from "@/lib/db";
-import { Product } from "@/lib/types";
+import { Product, LocalizedString } from "@/lib/types";
 import { Edit2, Plus, Trash2, Save, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -98,13 +98,13 @@ export default function AdminProductEditor() {
   const handleAdd = () => {
     setEditingProduct({
       id: "",
-      name: "",
+      name: { fr: "", ar: "" },
       slug: "",
-      shortDescription: "",
-      description: "",
+      shortDescription: { fr: "", ar: "" },
+      description: { fr: "", ar: "" },
       image: "",
       price: 0,
-      weight: "",
+      weight: { fr: "", ar: "" },
       alt: "",
       ingredients: [],
       benefits: [],
@@ -116,13 +116,16 @@ export default function AdminProductEditor() {
   const handleSave = async () => {
     if (!editingProduct) return;
     
-    if (!editingProduct.name.trim()) {
+    const nameFr = editingProduct.name?.fr?.trim() || "";
+    const nameAr = editingProduct.name?.ar?.trim() || "";
+    
+    if (!nameFr && !nameAr) {
       alert("Veuillez entrer un nom de produit");
       return;
     }
     
     const originalId = editingProduct.id || `temp_${Date.now()}`;
-    const newSlug = editingProduct.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const newSlug = (nameFr || nameAr).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     editingProduct.slug = newSlug;
     editingProduct.id = newSlug;
     
@@ -171,10 +174,10 @@ export default function AdminProductEditor() {
         {products.map((product) => (
           <div key={product.id} className="bg-white p-4 rounded-xl border border-gray-200 hover:shadow-md transition-shadow">
             {product.image && (
-              <img src={product.image} alt={product.alt || product.name} className="w-full h-32 object-cover rounded-lg mb-3" />
+              <img src={product.image} alt={product.alt || product.name.fr || product.name.ar} className="w-full h-32 object-cover rounded-lg mb-3" />
             )}
-            <h4 className="font-bold text-chocolate">{product.name}</h4>
-            <p className="text-sm text-gray-500">{product.shortDescription}</p>
+            <h4 className="font-bold text-chocolate">{product.name?.fr || product.name?.ar}</h4>
+            <p className="text-sm text-gray-500">{product.shortDescription?.fr || product.shortDescription?.ar}</p>
             <div className="flex justify-between items-center mt-3">
               <span className="font-bold text-green">{product.price} TND</span>
               <div className="flex gap-2">
@@ -210,11 +213,20 @@ export default function AdminProductEditor() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold mb-1">Nom du produit *</label>
+                <label className="block text-sm font-semibold mb-1">Nom du produit (Français) *</label>
                 <input
                   type="text"
-                  value={editingProduct.name}
-                  onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
+                  value={editingProduct.name?.fr || ""}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, name: { ...editingProduct.name, fr: e.target.value } })}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green/50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1">Nom du produit (العربية)</label>
+                <input
+                  type="text"
+                  value={editingProduct.name?.ar || ""}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, name: { ...editingProduct.name, ar: e.target.value } })}
                   className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green/50"
                 />
               </div>
@@ -230,35 +242,67 @@ export default function AdminProductEditor() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Poids</label>
+                  <label className="block text-sm font-semibold mb-1">Poids (FR)</label>
                   <input
                     type="text"
-                    value={editingProduct.weight}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, weight: e.target.value })}
+                    value={editingProduct.weight?.fr || ""}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, weight: { ...editingProduct.weight, fr: e.target.value } })}
                     placeholder="ex: 250g"
                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green/50"
                   />
                 </div>
               </div>
-
               <div>
-                <label className="block text-sm font-semibold mb-1">Description courte</label>
+                <label className="block text-sm font-semibold mb-1">Poids (العربية)</label>
                 <input
                   type="text"
-                  value={editingProduct.shortDescription}
-                  onChange={(e) => setEditingProduct({ ...editingProduct, shortDescription: e.target.value })}
+                  value={editingProduct.weight?.ar || ""}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, weight: { ...editingProduct.weight, ar: e.target.value } })}
+                  placeholder="ex: ٢٥٠غ"
                   className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green/50"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold mb-1">Description complète</label>
-                <textarea
-                  value={editingProduct.description}
-                  onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
-                  rows={4}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green/50"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-1">Description courte (FR)</label>
+                  <input
+                    type="text"
+                    value={editingProduct.shortDescription?.fr || ""}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, shortDescription: { ...editingProduct.shortDescription, fr: e.target.value } })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green/50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-1">Description courte (العربية)</label>
+                  <input
+                    type="text"
+                    value={editingProduct.shortDescription?.ar || ""}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, shortDescription: { ...editingProduct.shortDescription, ar: e.target.value } })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green/50"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-1">Description complète (FR)</label>
+                  <textarea
+                    value={editingProduct.description?.fr || ""}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, description: { ...editingProduct.description, fr: e.target.value } })}
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green/50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-1">Description complète (العربية)</label>
+                  <textarea
+                    value={editingProduct.description?.ar || ""}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, description: { ...editingProduct.description, ar: e.target.value } })}
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green/50"
+                  />
+                </div>
               </div>
 
               <div>
