@@ -115,6 +115,19 @@ export type CustomSectionItem = {
   image?: string;
 };
 
+export type SocialLink = {
+  display: boolean;
+  url: string;
+};
+
+export type SocialLinks = {
+  whatsapp: { display: boolean; phone: string };
+  facebook: SocialLink;
+  instagram: SocialLink;
+  tiktok: SocialLink;
+  youtube: SocialLink;
+};
+
 export type SiteContent = {
   visibility: SectionVisibility;
   logo?: string;
@@ -171,6 +184,7 @@ export type SiteContent = {
       phone: LocalizedString;
       email: LocalizedString;
     };
+    socialLinks: SocialLinks;
     paragraphs: LocalizedParagraphs;
   };
   finalCta: {

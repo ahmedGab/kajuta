@@ -41,8 +41,8 @@ export default function Header() {
     
   ];
   const ctaButton = content?.header?.ctaButton || { fr: "Commander", ar: "اطلب" };
-console.log(navLinks);
 console.log(pathname)
+
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-soft" : "bg-transparent"}`}>
       <div className="container-custom">
@@ -58,7 +58,8 @@ console.log(pathname)
               <Link 
                 key={idx} 
                 href={link.href} 
-                className={`font-medium hover:text-caramel transition-colors ${isScrolled ? "text-chocolate" : "text-chocolate"} ${pathname === link.href ? "text-caramel" : ""}`}
+                className={`font-medium hover:text-caramel transition-colors 
+                  ${pathname === link.href ? "text-caramel font-bold" :  "hover:text-caramel text-chocolate"}`}
               >
                 {link.label?.[language] || link.label}
               </Link>
