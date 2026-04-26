@@ -15,24 +15,11 @@ export default function Header() {
   const pathname = usePathname();
   const [language, setLanguage] = useState<Language>("fr");
   const [content, setContent] = useState<any>(null);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     setLanguage(getLanguage());
-    
-    const cached = localStorage.getItem("cajuta_header_cache");
-    if (cached) {
-      try {
-        setContent(JSON.parse(cached));
-      } catch (e) {}
-    }
-    
     db.getSiteContent().then((data) => {
-      if (data) {
-        setContent(data);
-        localStorage.setItem("cajuta_header_cache", JSON.stringify(data));
-      }
+      setContent(data);
     });
   }, []);
 
@@ -46,33 +33,16 @@ export default function Header() {
 
   const isRTL = language === "ar";
 
-  const navLinks = mounted && content?.header?.navLinks ? content.header.navLinks : [];
-  const ctaButton = mounted && content?.header?.ctaButton ? content.header.ctaButton : { fr: "Commander", ar: "اطلب" };
-
-  const isActiveLink = (linkHref: string) => {
-    if (!linkHref) return false;
-    if (linkHref.startsWith("#")) {
-      return false;
-    }
-    return pathname === linkHref;
-  };
-
-  if (!mounted || navLinks.length === 0) {
-    return (
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-soft">
-        <div className="container-custom">
-          <div className="flex items-center justify-between h-20">
-            <Link href="/">
-              <span className="font-display font-bold text-2xl tracking-tight text-green">
-                CAJUTA<span className="text-caramel">.</span>
-              </span>
-            </Link>
-          </div>
-        </div>
-      </header>
-    );
-  }
-
+  const navLinks = content?.header?.navLinks || [
+    { label: { fr: "Accueil", ar: "الرئيسية" }, href: "/" },
+    { label: { fr: "Nos Produits", ar: "منتجاتنا" }, href: "/produits" },
+    { label: { fr: "Notre Histoire", ar: "قصتنا" }, href: "/a-propos" },
+    { label: { fr: "FAQ", ar: "الأسئلة" }, href: "/faq" }
+    
+  ];
+  const ctaButton = content?.header?.ctaButton || { fr: "Commander", ar: "اطلب" };
+console.log(navLinks);
+console.log(pathname)
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-soft" : "bg-transparent"}`}>
       <div className="container-custom">
@@ -87,8 +57,8 @@ export default function Header() {
             {navLinks.map((link: any, idx: number) => (
               <Link 
                 key={idx} 
-                href={link.sectionId || link.href}
-                className={`font-medium transition-colors ${isScrolled ? "text-chocolate" : "text-chocolate"} ${isActiveLink(link.sectionId || link.href) ? "text-caramel font-bold" : "hover:text-caramel"}`}
+                href={link.href} 
+                className={`font-medium hover:text-caramel transition-colors ${isScrolled ? "text-chocolate" : "text-chocolate"} ${pathname === link.href ? "text-caramel" : ""}`}
               >
                 {link.label?.[language] || link.label}
               </Link>
@@ -115,9 +85,9 @@ export default function Header() {
             {navLinks.map((link: any, idx: number) => (
               <Link 
                 key={idx} 
-                href={link.sectionId || link.href}
+                href={link.href} 
                 onClick={() => setMobileMenuOpen(false)} 
-                className={`block py-2 font-medium ${isRTL ? "text-right" : ""} ${isActiveLink(link.sectionId || link.href) ? "text-caramel font-bold" : "text-chocolate"}`}
+                className={`block py-2 font-medium ${isRTL ? "text-right" : ""} ${pathname === link.href ? "text-caramel" : "text-chocolate"}`}
               >
                 {link.label?.[language] || link.label}
               </Link>
