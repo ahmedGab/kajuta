@@ -1,21 +1,32 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { getSiteContent, getLanguage } from "@/lib/storage";
-import { SiteContent, Language } from "@/lib/types";
-import { defaultSiteContent } from "@/data/siteContent";
+import * as db from "@/lib/db";
+import { Language } from "@/lib/types";
+import { getLanguage } from "@/lib/storage";
 import { ArrowRight } from "lucide-react";
 
 export default function CTASection() {
-  const [content, setContent] = useState<SiteContent["finalCta"]>(defaultSiteContent.finalCta);
+  const [content, setContent] = useState<any>(null);
   const [language, setLanguage] = useState<Language>("fr");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setContent(getSiteContent().finalCta);
+    setMounted(true);
     setLanguage(getLanguage());
+    
+    db.getSiteContent().then((data) => {
+      if (data && data.finalCta) {
+        setContent(data.finalCta);
+      }
+    });
   }, []);
 
   const isRTL = language === "ar";
+
+  if (!mounted || !content) {
+    return <div className="py-20 bg-background"></div>;
+  }
 
   return (
     <section className="py-20 bg-background relative overflow-hidden">
@@ -29,13 +40,13 @@ export default function CTASection() {
               className="text-3xl md:text-5xl font-display font-bold text-chocolate mb-6"
               style={{ direction: isRTL ? "rtl" : "ltr" }}
             >
-              {content.title[language]}
+              {content.title?.[language]}
             </h2>
             <p 
               className="text-lg text-chocolate/80 mb-10"
               style={{ direction: isRTL ? "rtl" : "ltr" }}
             >
-              {content.text[language]}
+              {content.text?.[language]}
             </p>
             <a
               href="https://wa.me/21650123456"

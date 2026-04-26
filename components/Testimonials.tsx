@@ -2,19 +2,25 @@
 
 import React, { useEffect, useState } from "react";
 import { Star, Quote } from "lucide-react";
-import { getTestimonials, getLanguage } from "@/lib/storage";
+import * as db from "@/lib/db";
 import { Testimonial as TestimonialType, Language } from "@/lib/types";
+import { getLanguage } from "@/lib/storage";
 
 export default function Testimonials() {
   const [testimonials, setTestimonials] = useState<TestimonialType[]>([]);
   const [language, setLanguage] = useState<Language>("fr");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setTestimonials(getTestimonials());
+    setMounted(true);
     setLanguage(getLanguage());
+    
+    db.getTestimonials().then((data) => {
+      setTestimonials(data || []);
+    });
   }, []);
 
-  if (testimonials.length === 0) return null;
+  if (!mounted || testimonials.length === 0) return <div className="py-20 bg-green"></div>;
 
   const isRTL = language === "ar";
 

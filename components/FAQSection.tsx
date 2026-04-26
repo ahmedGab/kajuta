@@ -2,21 +2,26 @@
 
 import React, { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { getFAQ, getLanguage } from "@/lib/storage";
+import * as db from "@/lib/db";
 import { FAQItem, Language } from "@/lib/types";
+import { getLanguage } from "@/lib/storage";
 
 export default function FAQSection() {
   const [faq, setFaq] = useState<FAQItem[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [language, setLanguage] = useState<Language>("fr");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setFaq(getFAQ());
+    setMounted(true);
     setLanguage(getLanguage());
-    const data = getFAQ();
-    if (data.length > 0) {
-      setOpenId(data[0].id);
-    }
+    
+    db.getFAQ().then((data) => {
+      setFaq(data || []);
+      if (data && data.length > 0) {
+        setOpenId(data[0].id);
+      }
+    });
   }, []);
 
   const toggleFAQ = (id: string) => {
@@ -27,6 +32,10 @@ export default function FAQSection() {
 
   const getQuestion = (item: FAQItem) => language === "ar" ? item.questionAr : item.questionFr;
   const getAnswer = (item: FAQItem) => language === "ar" ? item.answerAr : item.answerFr;
+
+  if (!mounted || faq.length === 0) {
+    return <div className="py-20 bg-white"></div>;
+  }
 
   return (
     <section className="section-padding bg-white" id="faq">

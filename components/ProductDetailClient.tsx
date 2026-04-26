@@ -1,55 +1,21 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { getProductsSync } from "@/lib/storage";
 import { Product } from "@/lib/types";
 import JsonLd from "@/components/JsonLd";
 import { ChevronRight, ShoppingCart, Check, Info } from "lucide-react";
-import * as db from "@/lib/db";
 
-export default function ProductDetailClient({ initialProduct, slug }: { initialProduct?: Product, slug: string }) {
-  const [product, setProduct] = useState<Product | undefined>(initialProduct);
-  const [mounted, setMounted] = useState(false);
+interface ProductDetailClientProps {
+  initialProduct: Product;
+  slug: string;
+}
 
-  useEffect(() => {
-    setMounted(true);
-    
-    const loadProduct = async () => {
-      try {
-        const supabaseProducts = await db.getProducts();
-        if (supabaseProducts && supabaseProducts.length > 0) {
-          const found = supabaseProducts.find((p: Product) => p.slug === slug);
-          if (found) {
-            setProduct(found);
-          }
-        } else {
-          // Fallback to localStorage
-          const storedProducts = getProductsSync();
-          const found = storedProducts.find((p) => p.slug === slug);
-          if (found) {
-            setProduct(found);
-          }
-        }
-      } catch (error) {
-        console.error("Error loading product:", error);
-        // Fallback to localStorage
-        const storedProducts = getProductsSync();
-        const found = storedProducts.find((p) => p.slug === slug);
-        if (found) {
-          setProduct(found);
-        }
-      }
-    };
-
-    loadProduct();
-  }, [slug]);
-
-  if (!mounted) {
-    if (!initialProduct) return null;
-  } else if (!product) {
+export default function ProductDetailClient({ initialProduct, slug }: ProductDetailClientProps) {
+  const p = initialProduct;
+  
+  if (!p) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <h1 className="text-3xl font-display font-bold text-chocolate mb-4">Produit introuvable</h1>
@@ -58,9 +24,6 @@ export default function ProductDetailClient({ initialProduct, slug }: { initialP
       </div>
     );
   }
-
-  const p = product || initialProduct;
-  if (!p) return null;
 
   const waMessage = `Bonjour Cajuta, je veux commander: ${p.name} (${p.weight})`;
   const waUrl = `https://wa.me/21650123456?text=${encodeURIComponent(waMessage)}`;

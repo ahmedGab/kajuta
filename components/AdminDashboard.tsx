@@ -33,10 +33,10 @@ export default function AdminDashboard() {
     router.push("/cajuta-admin-login");
   };
 
-  const handleReset = () => {
-    if (confirm("Attention ! Ceci va écraser toutes vos modifications et remettre le contenu par défaut. Continuer ?")) {
-      resetSiteContent();
-      resetProducts();
+  const handleReset = async () => {
+    if (confirm("Attention ! Ceci va remettre le contenu par défaut depuis Supabase. Continuer ?")) {
+      await resetSiteContent();
+      await resetProducts();
       window.location.reload();
     }
   };

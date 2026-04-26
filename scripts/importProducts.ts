@@ -1,6 +1,33 @@
-import { Product } from "@/lib/types";
+import { createClient } from "@supabase/supabase-js";
+import inquirer from "inquirer";
+import * as fs from "fs";
+import * as path from "path";
 
-export const defaultProducts: Product[] = [
+const envPath = path.join(process.cwd(), ".env.local");
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, "utf-8");
+  envContent.split("\n").forEach((line) => {
+    const [key, ...valueParts] = line.split("=");
+    if (key && valueParts.length > 0) {
+      process.env[key.trim()] = valueParts.join("=").trim();
+    }
+  });
+}
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("❌ Variables d'environnement manquantes");
+  console.log("   Assurez-vous que .env.local contient:");
+  console.log("   - NEXT_PUBLIC_SUPABASE_URL");
+  console.log("   - NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+const productsToImport = [
   {
     id: "amandes-caramelisees",
     name: "Amandes Caramélisées",
@@ -82,3 +109,145 @@ export const defaultProducts: Product[] = [
     seoDescription: "Craquez pour le Mix Cajuta : cajou, pistaches, noisettes et amandes caramélisés. L'assortiment gourmand suprême en Tunisie."
   }
 ];
+
+async function checkExistingProducts() {
+  console.log("\n🔍 Vérification des produits existants dans Supabase...\n");
+  
+  const { data, error } = await supabase
+    .from("products")
+    .select("id, data")
+    .limit(10);
+
+  if (error) {
+    console.error("❌ Erreur lors de la vérification:", error.message);
+    return null;
+  }
+
+  if (data && data.length > 0) {
+    console.log(`⚠️  ${data.length} produit(s) trouvé(s) dans Supabase:\n`);
+    data.forEach((p, i) => {
+      console.log(`   ${i + 1}. ${p.data?.name || p.id}`);
+    });
+    return data;
+  } else {
+    console.log("✅ Aucun produit existant dans Supabase\n");
+    return [];
+  }
+}
+
+async function importProducts() {
+  console.log("🚀 Script d'import des produits Cajuta vers Supabase\n");
+  console.log("=" .repeat(60) + "\n");
+
+  const existingProducts = await checkExistingProducts();
+
+  if (existingProducts === null) {
+    console.log("❌ Impossible de se connecter à Supabase");
+    console.log("   Vérifiez les variables d'environnement:");
+    console.log("   - NEXT_PUBLIC_SUPABASE_URL");
+    console.log("   - NEXT_PUBLIC_SUPABASE_ANON_KEY");
+    process.exit(1);
+  }
+
+  if (existingProducts.length > 0) {
+    console.log("\n⚠️  Des produits existent déjà. Voulez-vous:");
+    console.log("   1. Écraser tous les produits existants");
+    console.log("   2. Ajouter les nouveaux produits (garder les existants)");
+    console.log("   3. Annuler l'opération\n");
+
+    const { action } = await inquirer.prompt({
+      type: "list",
+      name: "action",
+      message: "Que voulez-vous faire?",
+      choices: [
+        "1. Écraser tous les produits existants",
+        "2. Ajouter les nouveaux produits",
+        "3. Annuler l'opération"
+      ]
+    });
+
+    if (action === "3" || action.includes("Annuler")) {
+      console.log("\n❌ Opération annulée par l'utilisateur");
+      process.exit(0);
+    }
+
+    if (action.includes("Écraser")) {
+      console.log("\n🗑️  Suppression des produits existants...\n");
+      const { error: deleteError } = await supabase
+        .from("products")
+        .delete()
+        .not("id", "is", null);
+
+      if (deleteError) {
+        console.error("❌ Erreur lors de la suppression:", deleteError.message);
+        process.exit(1);
+      }
+      console.log("✅ Produits existants supprimés\n");
+    }
+  }
+
+  console.log("📦 Produits à importer:\n");
+  productsToImport.forEach((p, i) => {
+    console.log(`   ${i + 1}. ${p.name} (ID: ${p.id})`);
+  });
+
+  console.log("\n" + "=".repeat(60));
+  console.log("Confirmation requise pour chaque produit:\n");
+
+  const confirmedProducts = [];
+
+  for (const product of productsToImport) {
+    const { confirm } = await inquirer.prompt({
+      type: "confirm",
+      name: "confirm",
+      message: `Importer "${product.name}"?`,
+      default: true
+    });
+
+    if (confirm) {
+      confirmedProducts.push(product);
+      console.log(`   ✅ ${product.name} - Confirmed`);
+    } else {
+      console.log(`   ❌ ${product.name} - Skipped`);
+    }
+  }
+
+  if (confirmedProducts.length === 0) {
+    console.log("\n❌ Aucun produit sélectionné. Opération annulée.");
+    process.exit(0);
+  }
+
+  console.log(`\n📤 Import de ${confirmedProducts.length} produit(s)...\n`);
+
+  let successCount = 0;
+  let errorCount = 0;
+
+  for (const product of confirmedProducts) {
+    const record = {
+      id: product.id,
+      data: product
+    };
+
+    const { error } = await supabase
+      .from("products")
+      .upsert(record, { onConflict: "id" });
+
+    if (error) {
+      console.error(`   ❌ Erreur pour ${product.name}:`, error.message);
+      errorCount++;
+    } else {
+      console.log(`   ✅ ${product.name} - Imported successfully`);
+      successCount++;
+    }
+  }
+
+  console.log("\n" + "=".repeat(60));
+  console.log("\n📊 Résumé de l'import:");
+  console.log(`   ✅ ${successCount} produit(s) importé(s) avec succès`);
+  if (errorCount > 0) {
+    console.log(`   ❌ ${errorCount} erreur(s)`);
+  }
+  console.log("\n🎉 Import terminé!\n");
+}
+
+importProducts().catch(console.error);

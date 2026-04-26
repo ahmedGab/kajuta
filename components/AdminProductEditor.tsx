@@ -1,19 +1,38 @@
 "use client";
 
-import React, { useState } from "react";
-import { getProducts, saveProducts } from "@/lib/storage";
+import React, { useState, useEffect } from "react";
+import * as db from "@/lib/db";
 import { Product } from "@/lib/types";
 import { Edit2, Plus, Trash2, Save, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export default function AdminProductEditor() {
-  const [products, setProducts] = useState<Product[]>(getProducts());
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [notification, setNotification] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [tempPreview, setTempPreview] = useState<string>("");
+
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    setLoading(true);
+    try {
+      const supabaseProducts = await db.getProducts();
+      if (supabaseProducts && supabaseProducts.length > 0) {
+        setProducts(supabaseProducts);
+      }
+    } catch (error) {
+      console.error("Error loading products:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const uploadFileWithProgress = async (file: File): Promise<string> => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -71,12 +90,6 @@ export default function AdminProductEditor() {
     setTimeout(() => setNotification(""), 3000);
   };
 
-  const syncAndSave = (newProducts: Product[]) => {
-    setProducts(newProducts);
-    saveProducts(newProducts);
-    showNotification("Changements des produits sauvegardés !");
-  };
-
   const handleEdit = (product: Product) => {
     setEditingProduct({ ...product });
     setIsAdding(false);
@@ -84,7 +97,7 @@ export default function AdminProductEditor() {
 
   const handleAdd = () => {
     setEditingProduct({
-      id: `product-${Date.now()}`,
+      id: "",
       name: "",
       slug: "",
       shortDescription: "",
@@ -103,28 +116,47 @@ export default function AdminProductEditor() {
   const handleSave = async () => {
     if (!editingProduct) return;
     
-    editingProduct.slug = editingProduct.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    if (!editingProduct.name.trim()) {
+      alert("Veuillez entrer un nom de produit");
+      return;
+    }
+    
+    const originalId = editingProduct.id || `temp_${Date.now()}`;
+    const newSlug = editingProduct.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    editingProduct.slug = newSlug;
+    editingProduct.id = newSlug;
     
     let newProducts: Product[];
-    if (isAdding) {
+    
+    if (!originalId || originalId.startsWith("temp_")) {
       newProducts = [...products, editingProduct];
     } else {
-      newProducts = products.map(p => p.id === editingProduct.id ? editingProduct : p);
+      newProducts = products.map(p => p.id === originalId ? editingProduct : p);
     }
     
     setProducts(newProducts);
-    await saveProducts(newProducts);
+    await db.saveProducts(newProducts);
     
     setEditingProduct(null);
     setIsAdding(false);
     showNotification(isAdding ? "Produit ajouté !" : "Produit modifié !");
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Êtes-vous sûr de vouloir supprimer ce produit ?")) return;
     const newProducts = products.filter(p => p.id !== id);
-    syncAndSave(newProducts);
+    setProducts(newProducts);
+    await db.saveProducts(newProducts);
+    showNotification("Produit supprimé !");
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="w-12 h-12 border-4 border-green border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -178,7 +210,7 @@ export default function AdminProductEditor() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold mb-1">Nom du produit</label>
+                <label className="block text-sm font-semibold mb-1">Nom du produit *</label>
                 <input
                   type="text"
                   value={editingProduct.name}
@@ -187,25 +219,26 @@ export default function AdminProductEditor() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold mb-1">Prix (TND)</label>
-                <input
-                  type="number"
-                  value={editingProduct.price}
-                  onChange={(e) => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green/50"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-1">Poids</label>
-                <input
-                  type="text"
-                  value={editingProduct.weight}
-                  onChange={(e) => setEditingProduct({ ...editingProduct, weight: e.target.value })}
-                  placeholder="ex: 250g"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green/50"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-1">Prix (TND)</label>
+                  <input
+                    type="number"
+                    value={editingProduct.price}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green/50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-1">Poids</label>
+                  <input
+                    type="text"
+                    value={editingProduct.weight}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, weight: e.target.value })}
+                    placeholder="ex: 250g"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green/50"
+                  />
+                </div>
               </div>
 
               <div>

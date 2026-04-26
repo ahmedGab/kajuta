@@ -1,26 +1,36 @@
 "use client";
 
-import React, { useState } from "react";
-import { getSiteContent, saveSiteContent } from "@/lib/storage";
-import { BilingualPack } from "@/lib/types";
+import React, { useState, useEffect } from "react";
+import * as db from "@/lib/db";
+import { BilingualPack, SiteContent } from "@/lib/types";
 import { Plus, Trash2, Edit2, Save, X } from "lucide-react";
 
 export default function AdminPacksEditor() {
-  const content = getSiteContent();
-  const [packs, setPacks] = useState<BilingualPack[]>(content.packs.items);
+  const [content, setContent] = useState<SiteContent | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [packs, setPacks] = useState<BilingualPack[]>([]);
   const [editingPack, setEditingPack] = useState<BilingualPack | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [notification, setNotification] = useState("");
+
+  useEffect(() => {
+    db.getSiteContent().then((data) => {
+      setContent(data);
+      setPacks((data as any)?.packs?.items || []);
+      setLoading(false);
+    });
+  }, []);
 
   const showNotification = (msg: string) => {
     setNotification(msg);
     setTimeout(() => setNotification(""), 3000);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!content) return;
     const newContent = { ...content };
     newContent.packs.items = packs;
-    saveSiteContent(newContent);
+    await db.saveSiteContent(newContent);
     showNotification("Packs sauvegardés avec succès !");
     setEditingPack(null);
     setIsAdding(false);
@@ -44,19 +54,22 @@ export default function AdminPacksEditor() {
     setIsAdding(false);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Supprimer ce pack ?")) {
-      const newPacks = packs.filter(p => p.id !== id);
-      setPacks(newPacks);
-      const newContent = { ...content };
-      newContent.packs.items = newPacks;
-      saveSiteContent(newContent);
-      showNotification("Pack supprimé !");
-    }
+  const handleDelete = async (id: string) => {
+    if (!content || !confirm("Supprimer ce pack ?")) return;
+    const newPacks = packs.filter(p => p.id !== id);
+    setPacks(newPacks);
+    const newContent = { ...content };
+    newContent.packs.items = newPacks;
+    await db.saveSiteContent(newContent);
+    showNotification("Pack supprimé !");
   };
 
   return (
     <div className="space-y-6">
+      {loading ? (
+        <div className="text-center py-8 text-gray-500">Chargement...</div>
+      ) : (
+      <>
       {notification && (
         <div className="bg-green/10 text-green px-4 py-3 rounded-lg border border-green/20 font-medium">
           {notification}
@@ -142,6 +155,8 @@ export default function AdminPacksEditor() {
             ))}
           </div>
         </>
+      )}
+      </>
       )}
     </div>
   );

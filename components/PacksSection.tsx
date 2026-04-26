@@ -1,21 +1,32 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { getSiteContent, getLanguage } from "@/lib/storage";
-import { SiteContent, Language } from "@/lib/types";
-import { defaultSiteContent } from "@/data/siteContent";
+import * as db from "@/lib/db";
+import { Language } from "@/lib/types";
+import { getLanguage } from "@/lib/storage";
 import { ShoppingBag } from "lucide-react";
 
 export default function PacksSection() {
-  const [content, setContent] = useState<SiteContent["packs"]>(defaultSiteContent.packs);
+  const [content, setContent] = useState<any>(null);
   const [language, setLanguage] = useState<Language>("fr");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setContent(getSiteContent().packs);
+    setMounted(true);
     setLanguage(getLanguage());
+    
+    db.getSiteContent().then((data) => {
+      if (data && data.packs) {
+        setContent(data.packs);
+      }
+    });
   }, []);
 
   const isRTL = language === "ar";
+
+  if (!mounted || !content) {
+    return <div className="py-20 bg-background"></div>;
+  }
 
   return (
     <section className="section-padding bg-background relative" id="packs">
@@ -28,9 +39,9 @@ export default function PacksSection() {
             className="text-3xl md:text-5xl font-display font-bold text-chocolate mb-6"
             style={{ direction: isRTL ? "rtl" : "ltr" }}
           >
-            {content.title[language]}
+            {content.title?.[language]}
           </h2>
-          {content.paragraphs[language].map((para, idx) => (
+          {(content.paragraphs?.[language] || []).map((para: string, idx: number) => (
             <p key={idx} className="text-chocolate/70 text-lg max-w-2xl mx-auto" style={{ direction: isRTL ? "rtl" : "ltr" }}>
               {para}
             </p>
@@ -38,7 +49,7 @@ export default function PacksSection() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 xl:gap-8">
-          {content.items.map((pack) => (
+          {(content.items || []).map((pack: any) => (
             <div key={pack.id} className="card-premium p-8 relative flex flex-col items-center text-center border border-white hover:border-mint transition-colors">
               <div className="w-16 h-16 rounded-full bg-mint flex items-center justify-center text-green mb-6">
                 <ShoppingBag size={28} />

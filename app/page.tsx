@@ -15,7 +15,6 @@ import FAQSection from "@/components/FAQSection";
 import CTASection from "@/components/CTASection";
 import CustomSectionsRenderer from "@/components/CustomSectionsRenderer";
 import { SectionVisibility, SiteContent } from "@/lib/types";
-import { defaultSiteContent } from "@/data/siteContent";
 import * as db from "@/lib/db";
 
 const defaultVisibility: SectionVisibility = {
@@ -62,8 +61,25 @@ const sectionComponents: Record<string, React.ReactNode> = {
   cta: <CTASection />,
 };
 
+const emptyContent: SiteContent = {
+  visibility: defaultVisibility,
+  logo: "",
+  hero: { title: { fr: "", ar: "" }, subtitle: { fr: "", ar: "" }, image: "", primaryButton: { fr: "", ar: "" }, secondaryButton: { fr: "", ar: "" } },
+  trust: { items: { fr: [], ar: [] } },
+  story: { title: { fr: "", ar: "" }, paragraphs: { fr: [], ar: [] }, image: "" },
+  delivery: { title: { fr: "", ar: "" }, paragraphs: { fr: [], ar: [] } },
+  occasions: { title: { fr: "", ar: "" }, paragraphs: { fr: [], ar: [] } },
+  about: { title: { fr: "", ar: "" }, paragraphs: { fr: [], ar: [] } },
+  packs: { title: { fr: "", ar: "" }, paragraphs: { fr: [], ar: [] }, items: [] },
+  footer: { description: { fr: "", ar: "" }, quickLinks: { title: { fr: "", ar: "" }, links: [] }, deliveryZones: { title: { fr: "", ar: "" }, zones: [] }, contact: { title: { fr: "", ar: "" }, address: { fr: "", ar: "" }, phone: { fr: "", ar: "" }, email: { fr: "", ar: "" } }, paragraphs: { fr: [], ar: [] } },
+  finalCta: { title: { fr: "", ar: "" }, text: { fr: "", ar: "" }, button: { fr: "", ar: "" } },
+  images: {},
+  sectionOrder: defaultOrder,
+  customSections: []
+};
+
 export default function Home() {
-  const [content, setContent] = useState<SiteContent>(defaultSiteContent);
+  const [content, setContent] = useState<SiteContent>(emptyContent);
   const [visibility, setVisibility] = useState<SectionVisibility | null>(null);
   const [sectionOrder, setSectionOrder] = useState<SectionOrderItem[]>(defaultOrder);
   const [mounted, setMounted] = useState(false);
@@ -82,6 +98,8 @@ export default function Home() {
           if (storedOrder && storedOrder.length > 0) {
             setSectionOrder(storedOrder);
           }
+        } else {
+          setVisibility(defaultVisibility);
         }
       } catch (error) {
         console.error("Error loading content:", error);

@@ -1,23 +1,43 @@
 "use client";
 
-import React, { useState } from "react";
-import { getSiteContent, saveSiteContent } from "@/lib/storage";
-import { LocalizedString } from "@/lib/types";
+import React, { useState, useEffect } from "react";
+import * as db from "@/lib/db";
+import { LocalizedString, SiteContent } from "@/lib/types";
 import { Save } from "lucide-react";
 
 export default function AdminFooterEditor() {
-  const content = getSiteContent();
+  const [content, setContent] = useState<SiteContent | null>(null);
+  const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState("");
 
-  const [description, setDescription] = useState<LocalizedString>(content.footer.description);
-  const [quickLinksTitle, setQuickLinksTitle] = useState<LocalizedString>(content.footer.quickLinks.title);
-  const [contactTitle, setContactTitle] = useState<LocalizedString>(content.footer.contact.title);
-  const [deliveryZonesTitle, setDeliveryZonesTitle] = useState<LocalizedString>(content.footer.deliveryZones.title);
-  const [address, setAddress] = useState<LocalizedString>(content.footer.contact.address);
-  const [phone, setPhone] = useState<LocalizedString>(content.footer.contact.phone);
-  const [email, setEmail] = useState<LocalizedString>(content.footer.contact.email);
+  const [description, setDescription] = useState<LocalizedString>({ fr: "", ar: "" });
+  const [quickLinksTitle, setQuickLinksTitle] = useState<LocalizedString>({ fr: "", ar: "" });
+  const [contactTitle, setContactTitle] = useState<LocalizedString>({ fr: "", ar: "" });
+  const [deliveryZonesTitle, setDeliveryZonesTitle] = useState<LocalizedString>({ fr: "", ar: "" });
+  const [phone, setPhone] = useState<LocalizedString>({ fr: "", ar: "" });
+  const [email, setEmail] = useState<LocalizedString>({ fr: "", ar: "" });
+  const [zones, setZones] = useState<LocalizedString[]>([]);
+  const [address, setAddress] = useState<LocalizedString>({ fr: "", ar: "" });
 
-  const handleSave = () => {
+  useEffect(() => {
+    db.getSiteContent().then((data) => {
+      setContent(data);
+      if (data) {
+        setDescription(data.footer.description);
+        setQuickLinksTitle(data.footer.quickLinks.title);
+        setContactTitle(data.footer.contact.title);
+        setDeliveryZonesTitle(data.footer.deliveryZones.title);
+        setAddress(data.footer.contact.address);
+        setPhone(data.footer.contact.phone);
+        setEmail(data.footer.contact.email);
+        setZones(data.footer.deliveryZones.zones);
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  const handleSave = async () => {
+    if (!content) return;
     const newContent = { ...content };
     newContent.footer = {
       ...newContent.footer,
@@ -29,6 +49,7 @@ export default function AdminFooterEditor() {
       deliveryZones: {
         ...newContent.footer.deliveryZones,
         title: deliveryZonesTitle,
+        zones,
       },
       contact: {
         title: contactTitle,
@@ -37,13 +58,17 @@ export default function AdminFooterEditor() {
         email,
       },
     };
-    saveSiteContent(newContent);
+    await db.saveSiteContent(newContent);
     setNotification("Footer sauvegardé avec succès !");
     setTimeout(() => setNotification(""), 3000);
   };
 
   return (
     <div className="space-y-6">
+      {loading ? (
+        <div className="text-center py-8 text-gray-500">Chargement...</div>
+      ) : (
+      <>
       {notification && (
         <div className="bg-green/10 text-green px-4 py-3 rounded-lg border border-green/20 font-medium">
           {notification}
@@ -92,15 +117,17 @@ export default function AdminFooterEditor() {
             <label className="block text-sm font-semibold mb-1">Titre (AR)</label>
             <input type="text" className="w-full p-2 border rounded" value={deliveryZonesTitle.ar} onChange={(e) => setDeliveryZonesTitle({ ...deliveryZonesTitle, ar: e.target.value })} dir="rtl" />
           </div>
-          {content.footer.deliveryZones.zones.map((zone, idx) => (
+          {zones.map((zone, idx) => (
             <div key={idx} className="grid grid-cols-2 gap-2">
               <input type="text" className="w-full p-2 border rounded" value={zone.fr} onChange={(e) => {
-                const newZones = [...content.footer.deliveryZones.zones];
+                const newZones = [...zones];
                 newZones[idx] = { ...newZones[idx], fr: e.target.value };
+                setZones(newZones);
               }} placeholder={`Zone ${idx + 1} (FR)`} />
               <input type="text" className="w-full p-2 border rounded" value={zone.ar} onChange={(e) => {
-                const newZones = [...content.footer.deliveryZones.zones];
+                const newZones = [...zones];
                 newZones[idx] = { ...newZones[idx], ar: e.target.value };
+                setZones(newZones);
               }} placeholder={`المنطقة ${idx + 1} (AR)`} dir="rtl" />
             </div>
           ))}
@@ -141,6 +168,8 @@ export default function AdminFooterEditor() {
       <button onClick={handleSave} className="btn-primary py-2 px-6 flex items-center gap-2">
         <Save size={18} /> Sauvegarder le Footer
       </button>
+      </>
+      )}
     </div>
   );
 }

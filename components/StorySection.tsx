@@ -1,20 +1,31 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { getSiteContent, getLanguage } from "@/lib/storage";
-import { SiteContent, Language } from "@/lib/types";
-import { defaultSiteContent } from "@/data/siteContent";
+import * as db from "@/lib/db";
+import { Language } from "@/lib/types";
+import { getLanguage } from "@/lib/storage";
 
 export default function StorySection() {
-  const [content, setContent] = useState<SiteContent["story"]>(defaultSiteContent.story);
+  const [content, setContent] = useState<any>(null);
   const [language, setLanguage] = useState<Language>("fr");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setContent(getSiteContent().story);
+    setMounted(true);
     setLanguage(getLanguage());
+    
+    db.getSiteContent().then((data) => {
+      if (data && data.story) {
+        setContent(data.story);
+      }
+    });
   }, []);
 
   const isRTL = language === "ar";
+
+  if (!mounted || !content) {
+    return <div className="py-20 bg-white"></div>;
+  }
 
   return (
     <section className="section-padding bg-white relative">
@@ -40,12 +51,12 @@ export default function StorySection() {
               className="text-3xl md:text-5xl font-display font-bold text-chocolate mb-8 relative"
               style={{ direction: isRTL ? "rtl" : "ltr" }}
             >
-              {content.title[language]}
+              {content.title?.[language]}
               <span className={`absolute -bottom-3 w-20 h-1.5 bg-caramel rounded-full ${isRTL ? 'right-0' : 'left-0'}`}></span>
             </h2>
             
             <div className="space-y-6 text-lg text-chocolate/80">
-              {content.paragraphs[language].map((para, i) => (
+              {(content.paragraphs?.[language] || []).map((para: string, i: number) => (
                 <p key={i} className="leading-relaxed" style={{ direction: isRTL ? "rtl" : "ltr" }}>
                   {para}
                 </p>

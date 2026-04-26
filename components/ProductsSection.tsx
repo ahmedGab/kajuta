@@ -4,19 +4,29 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import ProductCard from "./ProductCard";
-import { getProducts, getLanguage } from "@/lib/storage";
+import * as db from "@/lib/db";
 import { Product, Language } from "@/lib/types";
+import { getLanguage } from "@/lib/storage";
 
 export default function ProductsSection() {
   const [products, setProducts] = useState<Product[]>([]);
   const [language, setLanguage] = useState<Language>("fr");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setProducts(getProducts().slice(0, 4));
+    setMounted(true);
     setLanguage(getLanguage());
+    
+    db.getProducts().then((data) => {
+      setProducts((data || []).slice(0, 4));
+    });
   }, []);
 
   const isRTL = language === "ar";
+
+  if (!mounted || products.length === 0) {
+    return <div className="py-20 bg-background"></div>;
+  }
 
   return (
     <section className="section-padding bg-background relative" id="produits">
@@ -37,7 +47,7 @@ export default function ProductsSection() {
             href="/produits" 
             className={`group flex items-center gap-2 font-medium text-green hover:text-olive transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
           >
-            {isRTL ? "عرض všix للمنتجات" : "Voir tous les produits"} 
+            {isRTL ? "عرض جميع المنتجات" : "Voir tous les produits"} 
             <ArrowRight size={20} className={`group-hover:translate-x-1 transition-transform ${isRTL ? 'group-hover:-translate-x-1' : ''}`} />
           </Link>
         </div>

@@ -1,21 +1,32 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Truck, Clock, ShieldCheck, MapPin } from "lucide-react";
-import { getSiteContent, getLanguage } from "@/lib/storage";
-import { SiteContent, Language } from "@/lib/types";
-import { defaultSiteContent } from "@/data/siteContent";
+import { Truck, ShieldCheck, MapPin } from "lucide-react";
+import * as db from "@/lib/db";
+import { Language } from "@/lib/types";
+import { getLanguage } from "@/lib/storage";
 
 export default function DeliverySection() {
-  const [content, setContent] = useState<SiteContent["delivery"]>(defaultSiteContent.delivery);
+  const [content, setContent] = useState<any>(null);
   const [language, setLanguage] = useState<Language>("fr");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setContent(getSiteContent().delivery);
+    setMounted(true);
     setLanguage(getLanguage());
+    
+    db.getSiteContent().then((data) => {
+      if (data && data.delivery) {
+        setContent(data.delivery);
+      }
+    });
   }, []);
 
   const isRTL = language === "ar";
+
+  if (!mounted || !content) {
+    return <div className="py-20 bg-mint/30 border-y border-mint"></div>;
+  }
 
   return (
     <section className="section-padding bg-mint/30 border-y border-mint">
@@ -29,11 +40,11 @@ export default function DeliverySection() {
               className="text-3xl md:text-4xl font-display font-bold text-chocolate mb-8"
               style={{ direction: isRTL ? "rtl" : "ltr" }}
             >
-              {content.title[language]}
+              {content.title?.[language]}
             </h2>
             
             <div className="space-y-6 text-lg text-chocolate/80 mb-10">
-              {content.paragraphs[language].map((para, idx) => (
+              {(content.paragraphs?.[language] || []).map((para: string, idx: number) => (
                 <p key={idx} style={{ direction: isRTL ? "rtl" : "ltr" }}>{para}</p>
               ))}
             </div>

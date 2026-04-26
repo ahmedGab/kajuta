@@ -2,25 +2,35 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { getSiteContent, getLanguage } from "@/lib/storage";
+import * as db from "@/lib/db";
 import { SiteContent, Language } from "@/lib/types";
-import { defaultSiteContent } from "@/data/siteContent";
+import { getLanguage } from "@/lib/storage";
 
 export default function AboutPage() {
-  const [content, setContent] = useState<SiteContent["about"]>(defaultSiteContent.about);
+  const [content, setContent] = useState<SiteContent["about"] | null>(null);
   const [storyImage, setStoryImage] = useState<string>("https://images.unsplash.com/photo-1596706927909-66c5a0ec7b98?auto=format&fit=crop&q=80&w=1000");
   const [language, setLanguage] = useState<Language>("fr");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const data = getSiteContent();
-    setContent(data.about);
+    setMounted(true);
     setLanguage(getLanguage());
-    if (data.story && data.story.image) {
-      setStoryImage(data.story.image);
-    }
+    
+    db.getSiteContent().then((data) => {
+      if (data && data.about) {
+        setContent(data.about);
+      }
+      if (data && data.story && data.story.image) {
+        setStoryImage(data.story.image);
+      }
+    });
   }, []);
 
   const isRTL = language === "ar";
+
+  if (!mounted || !content) {
+    return <div className="bg-white min-h-screen pt-24 pb-20"></div>;
+  }
 
   return (
     <div className="bg-white min-h-screen pt-24 pb-20">
@@ -34,10 +44,10 @@ export default function AboutPage() {
               className="text-4xl lg:text-5xl font-display font-bold text-chocolate mb-8"
               style={{ direction: isRTL ? "rtl" : "ltr" }}
             >
-              {content.title[language]}
+              {content.title?.[language]}
             </h1>
             <div className="space-y-6 text-lg text-chocolate/80 leading-relaxed">
-              {content.paragraphs[language].map((p, idx) => (
+              {(content.paragraphs?.[language] || []).map((p: string, idx: number) => (
                 <p key={idx} style={{ direction: isRTL ? "rtl" : "ltr" }}>{p}</p>
               ))}
             </div>

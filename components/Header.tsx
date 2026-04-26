@@ -4,9 +4,10 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, ShoppingBag } from "lucide-react";
-import { getLanguage, getSiteContent } from "@/lib/storage";
+import { getLanguage } from "@/lib/storage";
 import { Language } from "@/lib/types";
 import LanguageSwitcher from "./LanguageSwitcher";
+import * as db from "@/lib/db";
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -17,7 +18,9 @@ export default function Header() {
 
   useEffect(() => {
     setLanguage(getLanguage());
-    setContent(getSiteContent());
+    db.getSiteContent().then((data) => {
+      setContent(data);
+    });
   }, []);
 
   useEffect(() => {
@@ -30,103 +33,65 @@ export default function Header() {
 
   const isRTL = language === "ar";
 
-  const navLinks = [
-    { name: language === "ar" ? "الرئيسية" : "Accueil", href: "/" },
-    { name: language === "ar" ? "المنتجات" : "Produits", href: "/produits" },
-    { name: language === "ar" ? "من نحن" : "À propos", href: "/a-propos" },
-    { name: language === "ar" ? "الأسئلة الشائعة" : "FAQ", href: "/faq" },
-    { name: language === "ar" ? "اتصل بنا" : "Contact", href: "/contact" },
-  ];
-
   return (
-    <header
-      className={`fixed w-full top-0 z-40 transition-all duration-300 ${
-        isScrolled ? "bg-white shadow-soft py-3" : "bg-background py-5"
-      }`}
-    >
-      <div className="container-custom flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2" dir="ltr">
-          {content?.logo ? (
-            <img src={content.logo} alt="Cajuta" className="h-10 object-contain" />
-          ) : (
-            <span className="font-display font-bold text-2xl text-green tracking-tight">
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-soft" : "bg-transparent"}`}>
+      <div className="container-custom">
+        <div className={`flex items-center justify-between h-20 ${isRTL ? "flex-row-reverse" : ""}`}>
+          <Link href="/" className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse" : ""}`}>
+            <span className={`font-display font-bold text-2xl tracking-tight ${isScrolled ? "text-green" : "text-green"}`}>
               CAJUTA<span className="text-caramel">.</span>
             </span>
-          )}
-        </Link>
+          </Link>
 
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-8">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`text-sm font-medium transition-colors ${
-                pathname === link.href || (link.href !== "/" && pathname?.startsWith(link.href))
-                  ? "text-green font-bold"
-                  : "text-chocolate hover:text-caramel"
-              }`}
-            >
-              {link.name}
+          <nav className={`hidden lg:flex items-center gap-8 ${isRTL ? "flex-row-reverse" : ""}`}>
+            <Link href="/" className={`font-medium hover:text-caramel transition-colors ${isScrolled ? "text-chocolate" : "text-chocolate"} ${pathname === "/" ? "text-caramel" : ""}`}>
+              {language === "ar" ? "الرئيسية" : "Accueil"}
             </Link>
-          ))}
-        </nav>
+            <Link href="/produits" className={`font-medium hover:text-caramel transition-colors ${isScrolled ? "text-chocolate" : "text-chocolate"} ${pathname === "/produits" ? "text-caramel" : ""}`}>
+              {language === "ar" ? "منتجاتنا" : "Nos Produits"}
+            </Link>
+            <Link href="/a-propos" className={`font-medium hover:text-caramel transition-colors ${isScrolled ? "text-chocolate" : "text-chocolate"} ${pathname === "/a-propos" ? "text-caramel" : ""}`}>
+              {language === "ar" ? "قصتنا" : "Notre Histoire"}
+            </Link>
+            <Link href="/faq" className={`font-medium hover:text-caramel transition-colors ${isScrolled ? "text-chocolate" : "text-chocolate"} ${pathname === "/faq" ? "text-caramel" : ""}`}>
+              {language === "ar" ? "الأسئلة" : "FAQ"}
+            </Link>
+          </nav>
 
-        {/* Actions Desktop */}
-        <div className="hidden md:flex items-center gap-4">
-          <LanguageSwitcher />
-          <a
-            href="https://wa.me/21650123456?text=Bonjour%20Cajuta!"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-primary py-2 px-5 text-sm"
-            dir="ltr"
-          >
-            <ShoppingBag className={`w-4 h-4 ${isRTL ? "ml-2" : "mr-2"}`} />
-            {language === "ar" ? "اطلب" : "Commander"}
-          </a>
+          <div className={`flex items-center gap-4 ${isRTL ? "flex-row-reverse" : ""}`}>
+            <LanguageSwitcher />
+            <a href="https://wa.me/21650123456" target="_blank" rel="noopener noreferrer" className="hidden sm:flex items-center gap-2 bg-green text-white px-4 py-2 rounded-full hover:bg-olive transition-colors">
+              <ShoppingBag size={18} />
+              <span className="text-sm font-medium">{language === "ar" ? "اطلب" : "Commander"}</span>
+            </a>
+
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className={`lg:hidden ${isScrolled ? "text-chocolate" : "text-chocolate"}`}>
+              {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+            </button>
+          </div>
         </div>
-
-        {/* Mobile menu button */}
-        <button
-          className="md:hidden text-chocolate"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
       </div>
 
-      {/* Mobile Nav */}
       {mobileMenuOpen && (
-        <div className={`md:hidden absolute top-full left-0 w-full bg-white shadow-soft border-t border-gray-100 flex flex-col py-4 px-4 space-y-4 ${isRTL ? 'text-right' : 'text-left'}`}>
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`text-base font-medium py-2 border-b border-gray-50 ${
-                pathname === link.href || (link.href !== "/" && pathname?.startsWith(link.href))
-                  ? "text-green font-bold"
-                  : "text-chocolate hover:text-caramel"
-              }`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              {link.name}
+        <div className="lg:hidden bg-white border-t shadow-soft">
+          <div className="container-custom py-4 space-y-4">
+            <Link href="/" onClick={() => setMobileMenuOpen(false)} className={`block py-2 font-medium ${isRTL ? "text-right" : ""} ${pathname === "/" ? "text-caramel" : "text-chocolate"}`}>
+              {language === "ar" ? "الرئيسية" : "Accueil"}
             </Link>
-          ))}
-          <div className="py-2">
-            <LanguageSwitcher />
+            <Link href="/produits" onClick={() => setMobileMenuOpen(false)} className={`block py-2 font-medium ${isRTL ? "text-right" : ""} ${pathname === "/produits" ? "text-caramel" : "text-chocolate"}`}>
+              {language === "ar" ? "منتجاتنا" : "Nos Produits"}
+            </Link>
+            <Link href="/a-propos" onClick={() => setMobileMenuOpen(false)} className={`block py-2 font-medium ${isRTL ? "text-right" : ""} ${pathname === "/a-propos" ? "text-caramel" : "text-chocolate"}`}>
+              {language === "ar" ? "قصتنا" : "Notre Histoire"}
+            </Link>
+            <Link href="/faq" onClick={() => setMobileMenuOpen(false)} className={`block py-2 font-medium ${isRTL ? "text-right" : ""} ${pathname === "/faq" ? "text-caramel" : "text-chocolate"}`}>
+              {language === "ar" ? "الأسئلة" : "FAQ"}
+            </Link>
+            <a href="https://wa.me/21650123456" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-green text-white px-4 py-3 rounded-full">
+              <ShoppingBag size={18} />
+              <span className="font-medium">{language === "ar" ? "اطلب عبر واتساب" : "Commander sur WhatsApp"}</span>
+            </a>
           </div>
-          <a
-            href="https://wa.me/21650123456?text=Bonjour%20Cajuta!"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-primary w-full justify-center mt-4"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            <ShoppingBag className={`w-5 h-5 ${isRTL ? "ml-2" : "mr-2"}`} />
-            {language === "ar" ? "اطلب عبر واتساب" : "Commander sur WhatsApp"}
-          </a>
         </div>
       )}
     </header>

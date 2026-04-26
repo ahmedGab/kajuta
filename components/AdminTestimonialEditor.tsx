@@ -1,17 +1,25 @@
 "use client";
 
-import React, { useState } from "react";
-import { getTestimonials, saveTestimonials } from "@/lib/storage";
+import React, { useState, useEffect } from "react";
+import * as db from "@/lib/db";
 import { Testimonial } from "@/lib/types";
 import { Plus, Trash2, Save, X, Edit2, Star } from "lucide-react";
 
 export default function AdminTestimonialEditor() {
-  const [testimonials, setTestimonials] = useState<Testimonial[]>(getTestimonials());
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editingT, setEditingT] = useState<Testimonial | null>(null);
 
-  const syncAndSave = (newData: Testimonial[]) => {
+  useEffect(() => {
+    db.getTestimonials().then((data) => {
+      setTestimonials(data);
+      setLoading(false);
+    });
+  }, []);
+
+  const syncAndSave = async (newData: Testimonial[]) => {
     setTestimonials(newData);
-    saveTestimonials(newData);
+    await db.saveTestimonials(newData);
   };
 
   const handleAdd = () => {
@@ -37,6 +45,10 @@ export default function AdminTestimonialEditor() {
 
   return (
     <div className="space-y-6">
+      {loading ? (
+        <div className="text-center py-8 text-gray-500">Chargement...</div>
+      ) : (
+      <>
       {editingT ? (
         <div className="bg-white p-6 rounded-xl border border-gray-200">
           <div className="flex justify-between mb-4">
@@ -90,6 +102,8 @@ export default function AdminTestimonialEditor() {
             ))}
           </div>
         </>
+      )}
+      </>
       )}
     </div>
   );

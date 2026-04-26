@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getSiteContent, saveSiteContent } from "@/lib/storage";
+import * as db from "@/lib/db";
 import { Save } from "lucide-react";
+import { SiteContent } from "@/lib/types";
 
 const defaultColors = {
   green: "#2F6B4F",
@@ -16,11 +17,18 @@ const defaultColors = {
 };
 
 export default function AdminColorEditor() {
-  const content = getSiteContent();
+  const [content, setContent] = useState<SiteContent | null>(null);
+  const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState("");
-  const [colors, setColors] = useState<Record<string, string>>(
-    (content as any).customColors || defaultColors
-  );
+  const [colors, setColors] = useState<Record<string, string>>(defaultColors);
+
+  useEffect(() => {
+    db.getSiteContent().then((data) => {
+      setContent(data);
+      setColors((data as any)?.customColors || defaultColors);
+      setLoading(false);
+    });
+  }, []);
 
   const colorFields = [
     { key: "green", label: "Vert Principal", description: "Couleur primaire de la marque" },
@@ -109,18 +117,20 @@ ${cssVars}
     setColors(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleSave = () => {
-    const newContent = { ...content, customColors: colors };
-    saveSiteContent(newContent);
+  const handleSave = async () => {
+    if (!content) return;
+    const newContent: SiteContent = { ...content, customColors: colors };
+    await db.saveSiteContent(newContent);
     setNotification("Couleurs sauvegardées ! La page va refléter les changements.");
     setTimeout(() => setNotification(""), 3000);
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
+    if (!content) return;
     if (confirm("Remettre les couleurs par défaut ?")) {
       setColors(defaultColors);
-      const newContent = { ...content, customColors: defaultColors };
-      saveSiteContent(newContent);
+      const newContent: SiteContent = { ...content, customColors: defaultColors };
+      await db.saveSiteContent(newContent);
       setNotification("Couleurs remises par défaut.");
       setTimeout(() => setNotification(""), 3000);
     }

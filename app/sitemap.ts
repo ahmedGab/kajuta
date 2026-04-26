@@ -1,11 +1,18 @@
 import { MetadataRoute } from "next";
-import { defaultProducts } from "@/data/products";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://cajuta.tn";
 
-  const productsUrls = defaultProducts.map((product) => ({
-    url: `${baseUrl}/produits/${product.slug}`,
+  const productSlugs = [
+    "amandes-caramelisees",
+    "noix-de-cajou-caramelisees",
+    "noisettes-caramelisees",
+    "pistaches-caramelisees",
+    "mix-cajuta"
+  ];
+
+  const productsUrls = productSlugs.map((slug) => ({
+    url: `${baseUrl}/produits/${slug}`,
     lastModified: new Date(),
     changeFrequency: "weekly" as const,
     priority: 0.8,

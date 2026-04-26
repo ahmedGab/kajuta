@@ -1,21 +1,35 @@
 "use client";
 
-import React, { useState } from "react";
-import { getSiteContent, saveSiteContent } from "@/lib/storage";
+import React, { useState, useEffect } from "react";
+import * as db from "@/lib/db";
 import { Save } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { SiteContent } from "@/lib/types";
 
 export default function AdminImageEditor() {
-  const content = getSiteContent();
-  const [heroImage, setHeroImage] = useState(content.hero.image);
-  const [storyImage, setStoryImage] = useState(content.story?.image || "");
-  const [logoImage, setLogoImage] = useState(content.logo || "");
+  const [content, setContent] = useState<SiteContent | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [heroImage, setHeroImage] = useState("");
+  const [storyImage, setStoryImage] = useState("");
+  const [logoImage, setLogoImage] = useState("");
   const [notification, setNotification] = useState("");
   
   const [uploadProgressHelper, setUploadProgressHelper] = useState<{ [key: string]: number }>({});
   const [isUploadingHero, setIsUploadingHero] = useState(false);
   const [isUploadingStory, setIsUploadingStory] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+
+  useEffect(() => {
+    db.getSiteContent().then((data) => {
+      setContent(data);
+      if (data) {
+        setHeroImage(data.hero.image);
+        setStoryImage(data.story?.image || "");
+        setLogoImage(data.logo || "");
+      }
+      setLoading(false);
+    });
+  }, []);
 
   const uploadFileToSupabase = async (file: File): Promise<string> => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -70,6 +84,7 @@ export default function AdminImageEditor() {
   };
 
   const handleSave = async () => {
+    if (!content) return;
     const newContent = { ...content };
     newContent.hero = { ...newContent.hero, image: heroImage };
     if (storyImage) {
@@ -77,7 +92,7 @@ export default function AdminImageEditor() {
     }
     newContent.logo = logoImage;
     
-    const success = await saveSiteContent(newContent);
+    const success = await db.saveSiteContent(newContent);
     if (success) {
       setNotification("Images sauvegardées avec succès !");
     } else {
@@ -87,6 +102,10 @@ export default function AdminImageEditor() {
 
   return (
     <div className="space-y-6">
+      {loading ? (
+        <div className="text-center py-8 text-gray-500">Chargement...</div>
+      ) : (
+      <>
       {notification && (
         <div className={`px-4 py-3 rounded-lg border ${
           notification.includes("succès") 
@@ -193,6 +212,8 @@ export default function AdminImageEditor() {
         <Save size={20} />
         Sauvegarder les Images
       </button>
+      </>
+      )}
     </div>
   );
 }

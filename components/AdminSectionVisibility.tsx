@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { getSiteContent, saveSiteContent } from "@/lib/storage";
-import { SectionVisibility } from "@/lib/types";
+import * as db from "@/lib/db";
+import { SectionVisibility, SiteContent, CustomSection } from "@/lib/types";
 import { Save, ChevronUp, ChevronDown, Grip, Layers } from "lucide-react";
 
 const baseSections = [
@@ -27,9 +27,10 @@ type SectionOrderItem = {
 };
 
 export default function AdminSectionVisibility() {
-  const content = getSiteContent();
+  const [content, setContent] = useState<SiteContent | null>(null);
+  const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState("");
-  const [visibility, setVisibility] = useState<SectionVisibility>(content.visibility || {
+  const [visibility, setVisibility] = useState<SectionVisibility>({
     hero: true,
     trustBar: true,
     products: true,
@@ -43,66 +44,70 @@ export default function AdminSectionVisibility() {
     cta: true,
   });
 
-  const customSections = content.customSections || [];
+  const [customSections, setCustomSections] = useState<CustomSection[]>([]);
 
   const [sectionOrder, setSectionOrder] = useState<SectionOrderItem[]>(() => {
-    const stored = content.sectionOrder as SectionOrderItem[] | undefined;
-    if (stored && stored.length > 0) {
-      return stored;
-    }
     const base = baseSections.map(s => ({ key: s.key, label: s.label, isCustom: false }));
-    const customItems = customSections.map(s => ({ 
-      key: `custom-${s.id}`, 
-      label: s.titleFr || "Sans titre", 
-      customId: s.id,
-      isCustom: true 
-    }));
-    return [...base, ...customItems];
+    return base;
   });
 
-  const [customEnabled, setCustomEnabled] = useState<Record<string, boolean>>(() => {
-    const map: Record<string, boolean> = {};
-    customSections.forEach(s => { map[s.id] = s.enabled; });
-    return map;
-  });
+  const [customEnabled, setCustomEnabled] = useState<Record<string, boolean>>({});
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const dragItem = useRef<number | null>(null);
 
   useEffect(() => {
-    const customItems = customSections.map(s => ({ 
-      key: `custom-${s.id}`, 
-      label: s.titleFr || "Sans titre", 
-      customId: s.id,
-      isCustom: true 
-    }));
-    const base = baseSections.map(s => ({ key: s.key, label: s.label, isCustom: false }));
-    
-    setSectionOrder(prev => {
-      const nonCustom = prev.filter(item => !item.isCustom);
-      const updatedCustom = customSections.map(s => ({ 
-        key: `custom-${s.id}`, 
-        label: s.titleFr || "Sans titre", 
-        customId: s.id,
-        isCustom: true 
-      }));
-      return [...nonCustom, ...updatedCustom];
+    db.getSiteContent().then((data) => {
+      setContent(data);
+      if (data) {
+        setVisibility(data.visibility || {
+          hero: true,
+          trustBar: true,
+          products: true,
+          whyChooseUs: true,
+          story: true,
+          occasions: true,
+          packs: true,
+          testimonials: true,
+          delivery: true,
+          faq: true,
+          cta: true,
+        });
+        const sections = data.customSections || [];
+        setCustomSections(sections);
+        
+        const base = baseSections.map(s => ({ key: s.key, label: s.label, isCustom: false }));
+        const customItems = sections.map(s => ({ 
+          key: `custom-${s.id}`, 
+          label: s.titleFr || "Sans titre", 
+          customId: s.id,
+          isCustom: true 
+        }));
+        setSectionOrder([...base, ...customItems]);
+        
+        const enabledMap: Record<string, boolean> = {};
+        sections.forEach(s => { enabledMap[s.id] = s.enabled; });
+        setCustomEnabled(enabledMap);
+      }
+      setLoading(false);
     });
-  }, [customSections.length, customSections.map(s => s.titleFr).join(",")]);
+  }, []);
 
   const handleToggle = (key: keyof SectionVisibility) => {
     setVisibility(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleToggleCustomSection = (sectionId: string) => {
+  const handleToggleCustomSection = async (sectionId: string) => {
     const newEnabled = !customEnabled[sectionId];
     setCustomEnabled(prev => ({ ...prev, [sectionId]: newEnabled }));
+    if (!content) return;
     const updatedSections = customSections.map(s => 
       s.id === sectionId ? { ...s, enabled: newEnabled } : s
     );
     const newContent = { ...content, customSections: updatedSections };
-    saveSiteContent(newContent);
+    await db.saveSiteContent(newContent);
+    setContent(newContent);
   };
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
@@ -157,9 +162,10 @@ export default function AdminSectionVisibility() {
     setSectionOrder(newOrder);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!content) return;
     const newContent = { ...content, visibility, sectionOrder };
-    saveSiteContent(newContent);
+    await db.saveSiteContent(newContent);
     setNotification("Configuration sauvegardée !");
     setTimeout(() => {
       setNotification("");
@@ -183,6 +189,10 @@ export default function AdminSectionVisibility() {
 
   return (
     <div className="space-y-6">
+      {loading ? (
+        <div className="text-center py-8 text-gray-500">Chargement...</div>
+      ) : (
+      <>
       {notification && (
         <div className="bg-green/10 text-green px-4 py-3 rounded-lg border border-green/20 font-medium">
           {notification}
@@ -276,6 +286,8 @@ export default function AdminSectionVisibility() {
       <button onClick={handleSave} className="btn-primary py-2 px-6 flex items-center gap-2 w-full justify-center">
         <Save size={18} /> Sauvegarder l&apos;ordre des sections
       </button>
+      </>
+      )}
     </div>
   );
 }

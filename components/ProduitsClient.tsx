@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import ProductCard from "@/components/ProductCard";
-import { getProducts } from "@/lib/storage";
+import * as db from "@/lib/db";
 import { Product } from "@/lib/types";
 
 export default function ProduitsClient({ initialProducts }: { initialProducts: Product[] }) {
@@ -11,7 +11,11 @@ export default function ProduitsClient({ initialProducts }: { initialProducts: P
 
   useEffect(() => {
     setMounted(true);
-    setProducts(getProducts()); // Load dynamic state from localStorage
+    db.getProducts().then((data) => {
+      if (data && data.length > 0) {
+        setProducts(data);
+      }
+    });
   }, []);
 
   const displayProducts = mounted ? products : initialProducts;

@@ -1,20 +1,27 @@
 "use client";
 
-import React, { useState } from "react";
-import { getSiteContent, addParagraph, updateParagraph, deleteParagraph, moveParagraph } from "@/lib/storage";
-import { Language, SectionKey } from "@/lib/types";
+import React, { useState, useEffect } from "react";
+import * as db from "@/lib/db";
+import { Language, SectionKey, SiteContent } from "@/lib/types";
 import { ArrowUp, ArrowDown, Trash2, Edit2, Plus, Save, Eye, Globe } from "lucide-react";
 import LanguageSwitcher from "./LanguageSwitcher";
 
 export default function AdminParagraphEditor() {
-  const content = getSiteContent();
+  const [content, setContent] = useState<SiteContent | null>(null);
+  const [loading, setLoading] = useState(true);
   const [selectedSection, setSelectedSection] = useState<SectionKey>("story");
   const [selectedLanguage, setSelectedLanguage] = useState<Language>("fr");
   const [previewLanguage, setPreviewLanguage] = useState<Language>("fr");
   const [newParagraph, setNewParagraph] = useState("");
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
-  const [refresh, setRefresh] = useState(0);
+
+  useEffect(() => {
+    db.getSiteContent().then((data) => {
+      setContent(data);
+      setLoading(false);
+    });
+  }, []);
 
   const sections: { id: SectionKey; name: string }[] = [
     { id: "story", name: "Histoire" },
@@ -25,13 +32,24 @@ export default function AdminParagraphEditor() {
     { id: "footer", name: "Footer" },
   ];
 
-  const currentParagraphs = content[selectedSection].paragraphs[selectedLanguage];
+  const currentParagraphs = content?.[selectedSection]?.paragraphs?.[selectedLanguage] || [];
 
-  const handleAdd = () => {
-    if (!newParagraph.trim()) return;
-    addParagraph(selectedSection, selectedLanguage, newParagraph);
+  const handleAdd = async () => {
+    if (!newParagraph.trim() || !content) return;
+    const updatedParagraphs = [...(content[selectedSection].paragraphs[selectedLanguage]), newParagraph];
+    const newContent = {
+      ...content,
+      [selectedSection]: {
+        ...content[selectedSection],
+        paragraphs: {
+          ...content[selectedSection].paragraphs,
+          [selectedLanguage]: updatedParagraphs,
+        },
+      },
+    };
+    setContent(newContent);
     setNewParagraph("");
-    setRefresh((prev) => prev + 1);
+    await db.saveSiteContent(newContent);
   };
 
   const handleStartEdit = (index: number) => {
@@ -39,27 +57,72 @@ export default function AdminParagraphEditor() {
     setEditingText(currentParagraphs[index]);
   };
 
-  const handleSaveEdit = (index: number) => {
-    if (!editingText.trim()) return;
-    updateParagraph(selectedSection, selectedLanguage, index, editingText);
+  const handleSaveEdit = async (index: number) => {
+    if (!editingText.trim() || !content) return;
+    const newParagraphs = [...content[selectedSection].paragraphs[selectedLanguage]];
+    newParagraphs[index] = editingText;
+    const newContent = {
+      ...content,
+      [selectedSection]: {
+        ...content[selectedSection],
+        paragraphs: {
+          ...content[selectedSection].paragraphs,
+          [selectedLanguage]: newParagraphs,
+        },
+      },
+    };
+    setContent(newContent);
     setEditingIndex(null);
-    setRefresh((prev) => prev + 1);
+    await db.saveSiteContent(newContent);
   };
 
-  const handleDelete = (index: number) => {
-    if (confirm("Êtes-vous sûr de vouloir supprimer ce paragraphe ?")) {
-      deleteParagraph(selectedSection, selectedLanguage, index);
-      setRefresh((prev) => prev + 1);
+  const handleDelete = async (index: number) => {
+    if (!content || !confirm("Êtes-vous sûr de vouloir supprimer ce paragraphe ?")) return;
+    const newParagraphs = content[selectedSection].paragraphs[selectedLanguage].filter((_, i) => i !== index);
+    const newContent = {
+      ...content,
+      [selectedSection]: {
+        ...content[selectedSection],
+        paragraphs: {
+          ...content[selectedSection].paragraphs,
+          [selectedLanguage]: newParagraphs,
+        },
+      },
+    };
+    setContent(newContent);
+    await db.saveSiteContent(newContent);
+  };
+
+  const handleMove = async (index: number, direction: "up" | "down") => {
+    if (!content) return;
+    const paragraphs = [...content[selectedSection].paragraphs[selectedLanguage]];
+    if (direction === "up" && index > 0) {
+      [paragraphs[index - 1], paragraphs[index]] = [paragraphs[index], paragraphs[index - 1]];
+    } else if (direction === "down" && index < paragraphs.length - 1) {
+      [paragraphs[index], paragraphs[index + 1]] = [paragraphs[index + 1], paragraphs[index]];
+    } else {
+      return;
     }
-  };
-
-  const handleMove = (index: number, direction: "up" | "down") => {
-    moveParagraph(selectedSection, selectedLanguage, index, direction);
-    setRefresh((prev) => prev + 1);
+    const newContent = {
+      ...content,
+      [selectedSection]: {
+        ...content[selectedSection],
+        paragraphs: {
+          ...content[selectedSection].paragraphs,
+          [selectedLanguage]: paragraphs,
+        },
+      },
+    };
+    setContent(newContent);
+    await db.saveSiteContent(newContent);
   };
 
   return (
-    <div className="space-y-8" key={refresh}>
+    <div className="space-y-8">
+      {loading ? (
+        <div className="text-center py-8 text-gray-500">Chargement...</div>
+      ) : (
+        <React.Fragment>
       {/* Language Selector for Editing */}
       <div className="bg-green/5 p-4 rounded-xl border border-green/20">
         <div className="flex flex-wrap items-center gap-4">
@@ -228,10 +291,10 @@ export default function AdminParagraphEditor() {
         >
           <h4 className="font-bold text-lg mb-4">{sections.find(s => s.id === selectedSection)?.name}</h4>
           <div className="space-y-4">
-            {content[selectedSection].paragraphs[previewLanguage].length === 0 ? (
+            {content && content[selectedSection]?.paragraphs?.[previewLanguage]?.length === 0 ? (
               <p className="text-gray-500 italic">Aucun paragraphe.</p>
-            ) : (
-              content[selectedSection].paragraphs[previewLanguage].map((para, idx) => (
+            ) : content && (
+              content[selectedSection].paragraphs[previewLanguage].map((para: string, idx: number) => (
                 <p key={idx} className="text-gray-700" dir={previewLanguage === "ar" ? "rtl" : "ltr"}>
                   {para}
                 </p>
@@ -240,6 +303,8 @@ export default function AdminParagraphEditor() {
           </div>
         </div>
       </div>
+        </React.Fragment>
+      )}
     </div>
   );
 }

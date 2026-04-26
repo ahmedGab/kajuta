@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
-import { getSiteContent, saveSiteContent } from "@/lib/storage";
-import { CustomSection, CustomSectionItem, ContentBlockType } from "@/lib/types";
+import React, { useState, useEffect } from "react";
+import * as db from "@/lib/db";
+import { CustomSection, CustomSectionItem, ContentBlockType, SiteContent } from "@/lib/types";
 import { Plus, Trash2, Save, X, Edit2, Image as ImageIcon, Type, AlignLeft, ChevronUp, ChevronDown, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -70,14 +70,23 @@ const uploadFileWithProgress = async (file: File, onProgress: (percent: number) 
 };
 
 export default function AdminCustomSections() {
-  const content = getSiteContent();
-  const [sections, setSections] = useState<CustomSection[]>(content.customSections || []);
+  const [content, setContent] = useState<SiteContent | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [sections, setSections] = useState<CustomSection[]>([]);
   const [editingSection, setEditingSection] = useState<CustomSection | null>(null);
   const [notification, setNotification] = useState("");
   const [selectedBlock, setSelectedBlock] = useState<ContentBlock | null>(null);
   const [editingBlocks, setEditingBlocks] = useState<ContentBlock[]>([]);
   const [uploadingBlockId, setUploadingBlockId] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  useEffect(() => {
+    db.getSiteContent().then((data) => {
+      setContent(data);
+      setSections((data as any)?.customSections || []);
+      setLoading(false);
+    });
+  }, []);
 
   const showNotification = (msg: string) => {
     setNotification(msg);
@@ -101,7 +110,8 @@ export default function AdminCustomSections() {
     setSelectedBlock(null);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!editingSection || !content) return;
     const updatedSections = sections.map(s => {
       if (s.id === editingSection?.id) {
         return {
@@ -112,7 +122,7 @@ export default function AdminCustomSections() {
       return s;
     });
     const newContent = { ...content, customSections: updatedSections };
-    saveSiteContent(newContent);
+    await db.saveSiteContent(newContent);
     showNotification("Sections sauvegardées !");
     setEditingSection(null);
     setSelectedBlock(null);
@@ -454,6 +464,10 @@ export default function AdminCustomSections() {
   }
 
   // Main List View
+  if (loading) {
+    return <div className="text-center py-8 text-gray-500">Chargement...</div>;
+  }
+
   return (
     <div className="space-y-6">
       {notification && (

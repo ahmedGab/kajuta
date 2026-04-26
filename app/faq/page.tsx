@@ -5,12 +5,18 @@ import FAQSection from "@/components/FAQSection";
 import JsonLd from "@/components/JsonLd";
 import { getLanguage } from "@/lib/storage";
 import { Language } from "@/lib/types";
+import * as db from "@/lib/db";
+import { FAQItem } from "@/lib/types";
 
 export default function FAQPage() {
   const [language, setLanguage] = useState<Language>("fr");
+  const [faqData, setFaqData] = useState<FAQItem[]>([]);
 
   useEffect(() => {
     setLanguage(getLanguage());
+    db.getFAQ().then((data) => {
+      setFaqData(data || []);
+    });
   }, []);
 
   const isRTL = language === "ar";
@@ -23,14 +29,12 @@ export default function FAQPage() {
     subtitle: {
       fr: "Tout ce que vous devez savoir sur Cajuta, nos produits et notre service de livraison en Tunisie.",
       ar: "كل ما يجب معرفته عن كاجوتا ومنتجاتنا وخدمة التوصيل في تونس."
-    },
-    subtitleFR: "Aide & Support",
-    subtitleAR: "مساعدة والدعم"
+    }
   };
 
   return (
     <>
-      <JsonLd type="FAQPage" />
+      <JsonLd type="FAQPage" faqData={faqData} />
       <div className="bg-background min-h-screen pt-24 pb-20">
         <div className="container-custom">
           <div className={`text-center mb-10 max-w-3xl mx-auto ${isRTL ? 'text-right' : ''}`}>

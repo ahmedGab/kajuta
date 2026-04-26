@@ -1,29 +1,62 @@
-import React from "react";
-import { defaultProducts } from "@/data/products";
+"use client";
+
+import React, { useEffect, useState } from "react";
 import ProductDetailClient from "@/components/ProductDetailClient";
-import type { Metadata } from "next";
+import { Product } from "@/lib/types";
+import * as db from "@/lib/db";
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const product = defaultProducts.find((p) => p.slug === params.slug);
-  
-  if (!product) {
-    return { title: "Détails Produit | Cajuta" };
-  }
-
-  return {
-    title: product.seoTitle || `${product.name} | Cajuta`,
-    description: product.seoDescription || product.shortDescription,
-    openGraph: {
-      title: product.seoTitle || product.name,
-      description: product.seoDescription || product.shortDescription,
-      images: [{ url: product.image || "https://images.unsplash.com/photo-1608039783021-6116a558f0dd?w=800&q=80" }],
-    },
-  };
+interface ProductDetailPageProps {
+  params: { slug: string };
 }
 
-export default function ProductDetailPage({ params }: { params: { slug: string } }) {
-  // We grab default product for initial SSR, but let Client sync with localStorage
-  const defaultProduct = defaultProducts.find((p) => p.slug === params.slug);
+export default function ProductDetailPage({ params }: ProductDetailPageProps) {
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  return <ProductDetailClient initialProduct={defaultProduct} slug={params.slug} />;
+  useEffect(() => {
+    const loadProduct = async () => {
+      try {
+        setLoading(true);
+        const products = await db.getProducts();
+        const found = products.find((p) => p.slug === params.slug);
+        
+        if (found) {
+          setProduct(found);
+        } else {
+          setError("Produit introuvable");
+        }
+      } catch (err) {
+        console.error("Error loading product:", err);
+        setError("Erreur lors du chargement du produit");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProduct();
+  }, [params.slug]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-green border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <h1 className="text-3xl font-display font-bold text-chocolate mb-4">
+          {error || "Produit introuvable"}
+        </h1>
+        <a href="/produits" className="btn-primary py-2 px-6">
+          Retour aux produits
+        </a>
+      </div>
+    );
+  }
+
+  return <ProductDetailClient initialProduct={product} slug={params.slug} />;
 }

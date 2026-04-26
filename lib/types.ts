@@ -118,6 +118,7 @@ export type CustomSectionItem = {
 export type SiteContent = {
   visibility: SectionVisibility;
   logo?: string;
+  customColors?: Record<string, string>;
   hero: {
     title: LocalizedString;
     subtitle: LocalizedString;

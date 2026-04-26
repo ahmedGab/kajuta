@@ -1,19 +1,19 @@
 import React from "react";
-import { defaultFAQ } from "@/data/faq";
 
 interface JsonLdProps {
   type: "FAQPage" | "Product";
   data?: any;
+  faqData?: any[];
 }
 
-export default function JsonLd({ type, data }: JsonLdProps) {
+export default function JsonLd({ type, data, faqData }: JsonLdProps) {
   let schema = {};
 
-  if (type === "FAQPage") {
+  if (type === "FAQPage" && faqData) {
     schema = {
       "@context": "https://schema.org",
       "@type": "FAQPage",
-      mainEntity: defaultFAQ.map((item) => ({
+      mainEntity: faqData.map((item: any) => ({
         "@type": "Question",
         name: item.questionFr,
         acceptedAnswer: {

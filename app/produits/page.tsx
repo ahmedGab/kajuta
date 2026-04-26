@@ -2,27 +2,31 @@
 
 import React, { useEffect, useState } from "react";
 import ProduitsClient from "@/components/ProduitsClient";
-import { defaultProducts } from "@/data/products";
 import { getLanguage } from "@/lib/storage";
 import { Language, Product } from "@/lib/types";
 import * as db from "@/lib/db";
 
 export default function ProduitsPage() {
   const [language, setLanguage] = useState<Language>("fr");
-  const [products, setProducts] = useState<Product[]>(defaultProducts);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLanguage(getLanguage());
     
     const loadProducts = async () => {
       try {
+        setLoading(true);
         const supabaseProducts = await db.getProducts();
         if (supabaseProducts && supabaseProducts.length > 0) {
           setProducts(supabaseProducts);
+        } else {
+          setError("Aucun produit trouvé. Exécutez 'npm run import-products' pour importer les produits.");
         }
-      } catch (error) {
-        console.error("Error loading products:", error);
+      } catch (err) {
+        console.error("Error loading products:", err);
+        setError("Erreur lors du chargement des produits");
       } finally {
         setLoading(false);
       }
@@ -57,6 +61,14 @@ export default function ProduitsPage() {
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="w-12 h-12 border-4 border-green border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-red-600 mb-4">{error}</p>
+          </div>
+        ) : products.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500">Aucun produit disponible.</p>
           </div>
         ) : (
           <ProduitsClient initialProducts={products} />

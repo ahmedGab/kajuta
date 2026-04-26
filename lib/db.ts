@@ -63,12 +63,36 @@ export async function getProducts(): Promise<Product[]> {
 
 export async function saveProducts(products: Product[]): Promise<boolean> {
   try {
-    const records = products.map((p) => ({
+    const newRecords = products.map((p) => ({
       id: p.id || `product_${Date.now()}_${Math.random()}`,
       data: p,
     }));
 
-    const { error } = await supabase.from("products").upsert(records, { onConflict: "id" });
+    const { error: fetchError, data: existingProducts } = await supabase
+      .from("products")
+      .select("id");
+
+    if (fetchError) {
+      console.error("Error fetching existing products:", fetchError);
+      return false;
+    }
+
+    const existingIds = existingProducts?.map(p => p.id) || [];
+    const newIds = newRecords.map(r => r.id);
+    const toDelete = existingIds.filter(id => !newIds.includes(id));
+
+    if (toDelete.length > 0) {
+      const { error: deleteError } = await supabase
+        .from("products")
+        .delete()
+        .in("id", toDelete);
+      
+      if (deleteError) {
+        console.error("Error deleting products:", deleteError);
+      }
+    }
+
+    const { error } = await supabase.from("products").upsert(newRecords, { onConflict: "id" });
 
     if (error) {
       console.error("Error saving products:", error);
@@ -102,12 +126,21 @@ export async function getTestimonials(): Promise<Testimonial[]> {
 
 export async function saveTestimonials(testimonials: Testimonial[]): Promise<boolean> {
   try {
-    const records = testimonials.map((t) => ({
+    const newRecords = testimonials.map((t) => ({
       id: t.id || `testimonial_${Date.now()}_${Math.random()}`,
       data: t,
     }));
 
-    const { error } = await supabase.from("testimonials").upsert(records, { onConflict: "id" });
+    const { data: existing } = await supabase.from("testimonials").select("id");
+    const existingIds = existing?.map(p => p.id) || [];
+    const newIds = newRecords.map(r => r.id);
+    const toDelete = existingIds.filter(id => !newIds.includes(id));
+
+    if (toDelete.length > 0) {
+      await supabase.from("testimonials").delete().in("id", toDelete);
+    }
+
+    const { error } = await supabase.from("testimonials").upsert(newRecords, { onConflict: "id" });
 
     if (error) {
       console.error("Error saving testimonials:", error);
@@ -141,12 +174,21 @@ export async function getFAQ(): Promise<FAQItem[]> {
 
 export async function saveFAQ(faq: FAQItem[]): Promise<boolean> {
   try {
-    const records = faq.map((f) => ({
+    const newRecords = faq.map((f) => ({
       id: f.id || `faq_${Date.now()}_${Math.random()}`,
       data: f,
     }));
 
-    const { error } = await supabase.from("faq").upsert(records, { onConflict: "id" });
+    const { data: existing } = await supabase.from("faq").select("id");
+    const existingIds = existing?.map(p => p.id) || [];
+    const newIds = newRecords.map(r => r.id);
+    const toDelete = existingIds.filter(id => !newIds.includes(id));
+
+    if (toDelete.length > 0) {
+      await supabase.from("faq").delete().in("id", toDelete);
+    }
+
+    const { error } = await supabase.from("faq").upsert(newRecords, { onConflict: "id" });
 
     if (error) {
       console.error("Error saving FAQ:", error);
