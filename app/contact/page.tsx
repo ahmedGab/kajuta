@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { MapPin, Phone, Mail, MessageCircle } from "lucide-react";
 import { getLanguage } from "@/lib/storage";
-import { Language } from "@/lib/types";
+import { Language, SiteContent } from "@/lib/types";
+import * as db from "@/lib/db";
 
 const InstagramIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
@@ -11,12 +12,20 @@ const InstagramIcon = () => (
 
 export default function ContactPage() {
   const [language, setLanguage] = useState<Language>("fr");
+  const [content, setContent] = useState<SiteContent | null>(null);
 
   useEffect(() => {
     setLanguage(getLanguage());
+    db.getSiteContent().then((data) => {
+      if (data) setContent(data);
+    });
   }, []);
 
   const isRTL = language === "ar";
+  
+  const socialLinks = content?.footer?.socialLinks;
+  const whatsappPhone = socialLinks?.whatsapp?.display ? socialLinks.whatsapp.phone : "";
+  const whatsappUrl = whatsappPhone ? `https://wa.me/${whatsappPhone.replace(/\D/g, "")}` : "https://wa.me";
 
   const texts = {
     title: {
@@ -149,15 +158,20 @@ export default function ContactPage() {
                 <p className="text-chocolate/80 mb-8" style={{ direction: isRTL ? "rtl" : "ltr" }}>
                   {texts.fastestDesc[language]}
                 </p>
-                <a 
-                  href="https://wa.me/21650123456" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="btn-primary w-full shadow-green inline-flex items-center justify-center gap-2"
-                >
-                  <MessageCircle size={20} />
-                  {texts.whatsappBtn[language]}
-                </a>
+                {whatsappPhone && (
+                  <>
+                    <a 
+                      href={whatsappUrl}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="btn-primary w-full shadow-green inline-flex items-center justify-center gap-2"
+                    >
+                      <MessageCircle size={20} />
+                      {texts.whatsappBtn[language]}
+                    </a>
+                    <p className="text-chocolate/70 mt-1">{whatsappPhone}</p>
+                  </>
+                )}
               </div>
             </div>
             

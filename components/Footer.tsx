@@ -70,7 +70,7 @@ export default function Footer() {
             </p>
             {hasSocial && (
               <div className="flex gap-3">
-                {socialLinks.whatsapp?.display && (
+                {/* {socialLinks.whatsapp?.display && (
                   <a 
                     href={getSocialLink("whatsapp", socialLinks.whatsapp.phone)} 
                     target="_blank" 
@@ -79,7 +79,7 @@ export default function Footer() {
                   >
                     <SocialIcon type="whatsapp" />
                   </a>
-                )}
+                )} */}
                 {socialLinks.facebook?.display && (
                   <a 
                     href={socialLinks.facebook.url} 

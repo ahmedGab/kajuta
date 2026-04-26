@@ -10,6 +10,7 @@ export default function Hero() {
   const [content, setContent] = useState<any>(null);
   const [language, setLanguage] = useState<Language>("fr");
   const [mounted, setMounted] = useState(false);
+  const [whatsappUrl, setWhatsappUrl] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -18,6 +19,10 @@ export default function Hero() {
     db.getSiteContent().then((data) => {
       if (data && data.hero) {
         setContent(data.hero);
+      }
+      if (data?.footer?.socialLinks?.whatsapp?.display) {
+        const phone = data.footer.socialLinks.whatsapp.phone.replace(/\D/g, "");
+        setWhatsappUrl(`https://wa.me/${phone}`);
       }
     });
   }, []);
@@ -63,7 +68,7 @@ export default function Hero() {
             <a href="/produits" className="btn-primary py-4 px-8 text-lg text-center">
               {content.primaryButton?.[language]}
             </a>
-            <a href="https://wa.me/21650123456" target="_blank" rel="noopener noreferrer" className="btn-secondary py-4 px-8 text-lg bg-white/50 backdrop-blur-sm text-center">
+            <a href={whatsappUrl || "#"} target="_blank" rel="noopener noreferrer" className="btn-secondary py-4 px-8 text-lg bg-white/50 backdrop-blur-sm text-center">
               {content.secondaryButton?.[language]}
             </a>
           </div>

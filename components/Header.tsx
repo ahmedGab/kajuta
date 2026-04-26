@@ -40,8 +40,10 @@ export default function Header() {
     { label: { fr: "FAQ", ar: "الأسئلة" }, href: "/faq" }
     
   ];
-  const ctaButton = content?.header?.ctaButton || { fr: "Commander", ar: "اطلب" };
-console.log(pathname)
+const ctaButton = content?.header?.ctaButton || { fr: "Commander", ar: "اطلب" };
+  const socialLinks = content?.footer?.socialLinks;
+  const whatsappPhone = socialLinks?.whatsapp?.display ? socialLinks.whatsapp.phone : "";
+  const whatsappUrl = whatsappPhone ? `https://wa.me/${whatsappPhone.replace(/\D/g, "")}` : "";
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-soft" : "bg-transparent"}`}>
@@ -68,7 +70,7 @@ console.log(pathname)
 
           <div className={`flex items-center gap-4 ${isRTL ? "flex-row-reverse" : ""}`}>
             <LanguageSwitcher />
-            <a href="https://wa.me/21650123456" target="_blank" rel="noopener noreferrer" className="hidden sm:flex items-center gap-2 bg-green text-white px-4 py-2 rounded-full hover:bg-olive transition-colors">
+            <a href={whatsappUrl || "#"} target="_blank" rel="noopener noreferrer" className="hidden sm:flex items-center gap-2 bg-green text-white px-4 py-2 rounded-full hover:bg-olive transition-colors">
               <ShoppingBag size={18} />
               <span className="text-sm font-medium">{ctaButton?.[language]}</span>
             </a>
@@ -93,7 +95,7 @@ console.log(pathname)
                 {link.label?.[language] || link.label}
               </Link>
             ))}
-            <a href="https://wa.me/21650123456" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-green text-white px-4 py-3 rounded-full">
+            <a href={whatsappUrl || "#"} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-green text-white px-4 py-3 rounded-full">
               <ShoppingBag size={18} />
               <span className="font-medium">{ctaButton?.[language]}</span>
             </a>
