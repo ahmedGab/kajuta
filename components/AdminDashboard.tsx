@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { logoutAdmin, isAdminLoggedIn } from "@/lib/adminAuth";
 import { resetSiteContent, resetProducts } from "@/lib/storage";
+import * as db from "@/lib/db";
 import AdminParagraphEditor from "./AdminParagraphEditor";
 import AdminProductEditor from "./AdminProductEditor";
 import AdminFAQEditor from "./AdminFAQEditor";
@@ -16,18 +17,25 @@ import AdminSectionVisibility from "./AdminSectionVisibility";
 import AdminCustomSections from "./AdminCustomSections";
 import AdminHeaderEditor from "./AdminHeaderEditor";
 import AdminSocialEditor from "./AdminSocialEditor";
-import { LayoutDashboard, LogOut, FileText, Package, Image as ImageIcon, MessageSquare, HelpCircle, Eye, RefreshCw, Gift, Footprints, Palette, Layout, Layers, Menu, Share2 } from "lucide-react";
+import AdminHeroEditor from "./AdminHeroEditor";
+import { LayoutDashboard, LogOut, FileText, Package, Image as ImageIcon, MessageSquare, HelpCircle, Eye, RefreshCw, Gift, Footprints, Palette, Layout, Layers, Menu, Share2, Sparkles } from "lucide-react";
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("header");
   const [isClient, setIsClient] = useState(false);
+  const [logo, setLogo] = useState("");
 
   useEffect(() => {
     setIsClient(true);
     if (!isAdminLoggedIn()) {
       router.push("/cajuta-admin-login");
     }
+    db.getSiteContent().then((data) => {
+      if (data?.logo) {
+        setLogo(data.logo);
+      }
+    });
   }, [router]);
 
   const handleLogout = () => {
@@ -47,6 +55,7 @@ export default function AdminDashboard() {
 
   const tabs = [
     { id: "header", name: "Header", icon: <Menu size={18} /> },
+    { id: "hero", name: "Hero", icon: <Sparkles size={18} /> },
     { id: "paragraphes", name: "Paragraphes", icon: <FileText size={18} /> },
     { id: "produits", name: "Produits", icon: <Package size={18} /> },
     { id: "packs", name: "Packs", icon: <Gift size={18} /> },
@@ -65,9 +74,13 @@ export default function AdminDashboard() {
       {/* Sidebar Fixed */}
       <div className="fixed left-0 top-0 w-64 h-screen bg-white border-r border-gray-200 flex flex-col z-50">
         <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-          <span className="font-display font-bold text-xl text-green">
-            CAJUTA<span className="text-caramel">.</span> Admin
-          </span>
+          {logo ? (
+            <img src={logo} alt="CAJUTA" className="h-8 w-auto object-contain" />
+          ) : (
+            <span className="font-display font-bold text-xl text-green">
+              CAJUTA<span className="text-caramel">.</span> Admin
+            </span>
+          )}
         </div>
         
         <div className="flex-1 overflow-y-auto py-6">
@@ -114,6 +127,7 @@ export default function AdminDashboard() {
 
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8">
             {activeTab === "header" && <AdminHeaderEditor />}
+            {activeTab === "hero" && <AdminHeroEditor />}
             {activeTab === "paragraphes" && <AdminParagraphEditor />}
             {activeTab === "produits" && <AdminProductEditor />}
             {activeTab === "packs" && <AdminPacksEditor />}

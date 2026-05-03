@@ -50,9 +50,13 @@ const ctaButton = content?.header?.ctaButton || { fr: "Commander", ar: "اطلب
       <div className="container-custom">
         <div className={`flex items-center justify-between h-20 ${isRTL ? "flex-row-reverse" : ""}`}>
           <Link href="/" className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse" : ""}`}>
-            <span className={`font-display font-bold text-2xl tracking-tight ${isScrolled ? "text-green" : "text-green"}`}>
-              CAJUTA<span className="text-caramel">.</span>
-            </span>
+            {content?.logo ? (
+              <img src={content.logo} alt="CAJUTA" className="h-[75px] w-auto object-contain" />
+            ) : (
+              <span className={`font-display font-bold text-2xl tracking-tight ${isScrolled ? "text-green" : "text-green"}`}>
+                CAJUTA<span className="text-caramel">.</span>
+              </span>
+            )}
           </Link>
 
           <nav className={`hidden lg:flex items-center gap-8 ${isRTL ? "flex-row-reverse" : ""}`}>

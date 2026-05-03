@@ -25,6 +25,7 @@ const SocialIcon = ({ type }: { type: string }) => {
 
 export default function Footer() {
   const [content, setContent] = useState<any>(null);
+  const [logo, setLogo] = useState<string>("");
   const [lang, setLang] = useState<Language>("fr");
   const [mounted, setMounted] = useState(false);
 
@@ -35,6 +36,7 @@ export default function Footer() {
     db.getSiteContent().then((data) => {
       if (data && data.footer) {
         setContent(data.footer);
+        setLogo(data.logo || "");
       }
     });
   }, []);
@@ -61,9 +63,13 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <Link href="/" className="inline-block mb-4">
-              <span className="font-display font-bold text-3xl tracking-tight text-white">
-                CAJUTA<span className="text-honey">.</span>
-              </span>
+              {logo ? (
+                <img src={logo} alt="CAJUTA" className="h-[150px] w-auto object-contain" />
+              ) : (
+                <span className="font-display font-bold text-3xl tracking-tight text-white">
+                  CAJUTA<span className="text-honey">.</span>
+                </span>
+              )}
             </Link>
             <p className="text-mint text-sm leading-relaxed mb-6">
               {content.description?.[lang]}
