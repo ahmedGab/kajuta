@@ -3,6 +3,32 @@
 import { SiteContent, Product, Testimonial, FAQItem, Language } from "./types";
 import * as db from "./db";
 
+const CACHE_VERSION_KEY = "cajuta_cache_version";
+const CACHE_VERSION = 2;
+
+const CAJUTA_CACHE_KEYS = [
+  CACHE_VERSION_KEY,
+  "cajuta_language",
+  "cajuta_site_content",
+  "cajuta_products",
+  "cajuta_testimonials",
+  "cajuta_faq",
+];
+
+function purgeCacheIfNeeded(): void {
+  if (typeof window === "undefined") return;
+
+  const storedVersion = localStorage.getItem(CACHE_VERSION_KEY);
+  if (storedVersion !== String(CACHE_VERSION)) {
+    CAJUTA_CACHE_KEYS.forEach((key) => {
+      localStorage.removeItem(key);
+    });
+    localStorage.setItem(CACHE_VERSION_KEY, String(CACHE_VERSION));
+  }
+}
+
+purgeCacheIfNeeded();
+
 const LANGUAGE_STORAGE_KEY = "cajuta_language";
 
 export function getLanguage(): Language {
