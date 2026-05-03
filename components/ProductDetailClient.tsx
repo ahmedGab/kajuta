@@ -79,8 +79,6 @@ export default function ProductDetailClient({ initialProduct, slug }: ProductDet
               <span className="text-sm text-caramel font-medium mb-3 uppercase tracking-wider">{getLocalized(p.weight)}</span>
               <h1 className="text-3xl md:text-4xl font-display font-bold text-chocolate mb-4">{getLocalized(p.name)}</h1>
               <p className="text-lg text-chocolate/70 mb-6">{getLocalized(p.shortDescription)}</p>
-              
-              <div className="text-3xl font-bold text-green mb-8">{p.price} TND</div>
 
               {/* Benefits */}
               {p.benefits && p.benefits.length > 0 && (

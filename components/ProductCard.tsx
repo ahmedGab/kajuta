@@ -25,9 +25,9 @@ export default function ProductCard({ product, language = "fr" }: ProductCardPro
           className="object-cover group-hover:scale-105 transition-transform duration-500"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
-        <div className={`absolute top-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-chocolate shadow-sm ${isRTL ? 'right-4 left-auto' : 'left-4'}`}>
+        {/* <div className={`absolute top-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-chocolate shadow-sm ${isRTL ? 'right-4 left-auto' : 'left-4'}`}>
           {weight}
-        </div>
+        </div> */}
       </Link>
       
       <div className="p-6 flex flex-col flex-grow">
@@ -38,10 +38,7 @@ export default function ProductCard({ product, language = "fr" }: ProductCardPro
           {shortDesc}
         </p>
         
-        <div className={`flex items-center justify-between mt-auto ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <div className="font-display font-bold text-2xl text-caramel">
-            {product.price} <span className="text-base text-chocolate/60">TND</span>
-          </div>
+        {/* <div className={`flex items-center justify-between mt-auto ${isRTL ? 'flex-row-reverse' : ''}`}>
           <a
             href={`https://wa.me/21650123456?text=${encodeURIComponent(isRTL ? `مرحبا، أريد طلب ${name}` : `Bonjour Cajuta, je veux commander: ${name}`)}`}
             target="_blank"
@@ -51,7 +48,7 @@ export default function ProductCard({ product, language = "fr" }: ProductCardPro
           >
             <ShoppingCart size={20} />
           </a>
-        </div>
+        </div> */}
       </div>
     </div>
   );
